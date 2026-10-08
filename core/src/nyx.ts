@@ -1,4 +1,4 @@
-export type Activity = "idle" | "sleeping" | "eating" | "playing";
+export type Activity = "idle" | "sleeping" | "eating" | "playing"
 export type Action = "feed" | "play" | "pet" | "wake"
 
 export interface Stats {
