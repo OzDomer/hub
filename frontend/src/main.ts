@@ -58,7 +58,7 @@ resize()
 
 function frame(time: number) {
   countFrame?.(time)
-  drawFrame(ctx, canvas.clientWidth, canvas.clientHeight, view, time, theme)
+  drawFrame(ctx, canvas.clientWidth, canvas.clientHeight, view, time, theme, 1)
   requestAnimationFrame(frame)
 }
 

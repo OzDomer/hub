@@ -21,6 +21,7 @@ export function drawFrame(
   view: NyxView | null,
   time: number,
   theme: Theme,
+  glow: number,
 ): void {
   ctx.fillStyle = theme.background
   ctx.fillRect(0, 0, width, height)
@@ -31,7 +32,7 @@ export function drawFrame(
   const y = height / 2 + bob(view.activity, time) * radius
   const brightness = view.activity === "sleeping" ? 0.45 : 1
 
-  drawOrb(ctx, x, y, radius * pulse(view.activity, time), brightness, theme)
+  drawOrb(ctx, x, y, radius * pulse(view.activity, time), brightness, glow, theme)
   drawMoon(ctx, x, y - radius * 3.2, radius * 0.45, view.mood, theme)
   if (view.activity === "sleeping") drawZs(ctx, x + radius, y - radius, radius, time, theme)
 }
@@ -54,13 +55,14 @@ function drawOrb(
   y: number,
   radius: number,
   brightness: number,
+  glow: number,
   theme: Theme,
 ): void {
-  const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 2.5)
-  glow.addColorStop(0, `rgb(${theme.glow} / ${0.9 * brightness})`)
-  glow.addColorStop(0.35, `rgb(${theme.glow} / ${0.35 * brightness})`)
-  glow.addColorStop(1, `rgb(${theme.glow} / 0)`)
-  ctx.fillStyle = glow
+  const halo = ctx.createRadialGradient(x, y, 0, x, y, radius * 2.5)
+  halo.addColorStop(0, `rgb(${theme.glow} / ${Math.min(1, 0.9 * brightness * glow)})`)
+  halo.addColorStop(0.35, `rgb(${theme.glow} / ${Math.min(1, 0.35 * brightness * glow)})`)
+  halo.addColorStop(1, `rgb(${theme.glow} / 0)`)
+  ctx.fillStyle = halo
   ctx.beginPath()
   ctx.arc(x, y, radius * 2.5, 0, Math.PI * 2)
   ctx.fill()

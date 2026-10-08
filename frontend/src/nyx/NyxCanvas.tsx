@@ -5,15 +5,19 @@ import type { NyxView } from "./draw"
 
 interface NyxCanvasProps {
   view: NyxView | null
+  glow: number
+  onFrame?: (time: number) => void
 }
 
-export function NyxCanvas({ view }: NyxCanvasProps) {
+export function NyxCanvas({ view, glow, onFrame }: NyxCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const viewRef = useRef(view)
+  const onFrameRef = useRef(onFrame)
 
   useEffect(() => {
     viewRef.current = view
-  }, [view])
+    onFrameRef.current = onFrame
+  }, [view, onFrame])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -35,7 +39,8 @@ export function NyxCanvas({ view }: NyxCanvasProps) {
     observer.observe(canvas)
 
     let frameId = requestAnimationFrame(function frame(time) {
-      drawFrame(ctx, width, height, viewRef.current, time, theme)
+      onFrameRef.current?.(time)
+      drawFrame(ctx, width, height, viewRef.current, time, theme, glow)
       frameId = requestAnimationFrame(frame)
     })
 
@@ -43,7 +48,7 @@ export function NyxCanvas({ view }: NyxCanvasProps) {
       cancelAnimationFrame(frameId)
       observer.disconnect()
     }
-  }, [])
+  }, [glow])
 
   return <canvas ref={canvasRef} className="nyx-canvas" />
 }
