@@ -30,7 +30,8 @@ athena (Raspberry Pi 5 behind the TV, always on)
 | Piece | Runs on | Role |
 |---|---|---|
 | **hub** | athena, Docker | Owns the pet and the world. Reads other sources. Pushes topics to screens. Decides handoffs. |
-| **screen** | Chromium kiosk on athena (TV), our Cast receiver on the projector itself (D12), Electron (laptop) | Draws its part of the world and its HUD widgets. Sends input. Never decides anything. |
+| **screen** | Chromium kiosk on athena (TV), our Cast receiver on the projector itself (D12), Electron (laptop) | Draws its part of the world and its HUD widgets. No on-screen controls (M2.5). Never decides anything. |
+| **remote** | a phone browser (the frontend at `?view=remote`) | Shows the pet's state as text and sends actions. Input comes from here, the stick, or later a gamepad. |
 | **stick** | M5StickS3 | A screen while home; the pet's owner while carried (D2). Detects the flick (IMU). |
 | **lamp** | the i_Lamp, via the lamp hub (`ilamp` repo) | A source the hub talks to over WebSocket. Never imported. |
 
@@ -209,7 +210,7 @@ The projector is wireless, so nothing on athena renders for it. It's a Google TV
 
 - **Tested:** from athena, `catt -d 192.168.1.167 ...` works. athena can launch Cast receivers on the projector.
 - **Tested, fails:** `catt cast_site` (the generic DashCast receiver). It "force loads" by navigating away from the receiver page, and Google TV ends the session and returns to the home screen.
-- **Plan:** our own registered Cast receiver app (Google Cast developer console, one-time $5; the projector is registered as a test device, so nothing is published). The receiver page is the `screen` page (or a thin shell around it) with the idle timeout disabled. The hub re-casts automatically when the Selene room disconnects (it already tracks screen presence, D10). Build it in M2/M4, once a page exists.
+- **Plan:** our own registered Cast receiver app (Google Cast developer console, one-time $5; the projector is registered as a test device, so nothing is published). The receiver page is the frontend's screen view at `?room=selene` (or a thin shell around it) with the idle timeout disabled. The hub re-casts automatically when the Selene room disconnects (it already tracks screen presence, D10). Build it in M2/M4, once a page exists.
 - **Requirements:** the receiver URL must be HTTPS and reachable from the projector (DNS is an open question, section 8). Cast discovery (mDNS) is blocked by ufw and doesn't cross into Docker, so the projector is addressed by IP.
 - **Fallback:** a kiosk browser app on the projector (e.g. Fully Kiosk Browser) pointed at the page, auto-launching on boot.
 - **Rejected:** an HDMI cable from the Pi (Oz doesn't want the projector cabled); the laptop driving it (its outputs are full).
@@ -253,9 +254,19 @@ hub/
   core/        pet state + rules; pure; injected clock; heavily tested
   world/       the space: rooms, edges, doors, presence, intents; pure; tested
   server/      the hub process: residents (pet, world), sources (lamp, kuma, ...), WebSocket transport
-  screen/      ONE web client (TS + canvas, Vite); config says which room it is
-  hud/         HUD widgets the screen mounts
-  desktop/     Electron transparent overlay for the laptop monitors; loads screen/ (later)
+  frontend/    ONE web app (React + TS + canvas, Vite): screen views + the remote (M2.5)
+    src/
+      main.tsx         mounts <App /> in StrictMode
+      App.tsx          picks the view from the URL
+      rooms.ts         room presets + the pure URL parser (tested in rooms.test.ts)
+      theme.ts         reads the CSS palette for the canvas
+      styles.css       the palette (CSS variables) + all styles
+      hub/             connection.ts (WebSocket + reconnect), useHub.ts (the React hook)
+      nyx/             draw.ts (pure canvas drawing), NyxCanvas.tsx
+      debug/           fpsMeter.ts
+      views/           ScreenView.tsx, RemoteView.tsx
+  hud/         HUD widgets the screen views mount
+  desktop/     Electron transparent overlay for the laptop monitors; loads frontend/ (later)
   stick/       ESP32 firmware (PlatformIO + M5Unified)
   tools/       fake stick, fake screens, simulators, asset helpers
   assets/      sprites (see section 7)
@@ -266,6 +277,7 @@ hub/
 - The server package is `server/`, not `hub/`, to avoid `hub/hub/`.
 - **Open `hub.code-workspace` in VS Code, not the folder.** PlatformIO only activates when `platformio.ini` sits at the root of a workspace folder, so `stick/` is its own workspace folder alongside the repo root.
 - Packages are added when their milestone starts; empty folders aren't committed.
+- **frontend URLs:** `/?room=<id>` is a screen (`dev`, `helios`, `selene`; default `dev`), `&fps` adds a debug overlay; `/?view=remote` is the remote. An unknown room is an on-screen error, never a silent fallback.
 
 Tests: **Vitest** for `core`, `world`, `shared`, and `server`. The server is tested against a **fake stick**, **fake screens** and a **fake clock**, like the fake lamp.
 
@@ -301,6 +313,17 @@ Each one ends with something visibly working, and a commit.
 - **Done when:** the pet lives in a laptop browser tab, keeps living across a hub restart, and buttons affect it.
 - **Status: done (Oct 2026).** Nyx lives in the hub (ticking, persisted to JSON, survives restarts), with a WebSocket transport (zod-validated, broadcast to all subscribers) on an Express server, plus a Vite screen page: a glowing orb with a moon for mood, live updates, action buttons, auto-reconnect. Tested on Selene through a browser app over the LAN: 57-59 fps (60 Hz output) idle and during the play pulse; with room lights on, the dark background nearly vanishes into the wall, confirming the light-on-dark design.
 
+### M2.5: Frontend foundation
+The M2 `screen/` page was a working proof of concept: one `main.ts` with all the wiring, CSS inline in `index.html`, and the action buttons on the same page as the display, although Helios and Selene have no input. Before M3-M5 add more to it, it's restructured:
+- **One app:** `screen/` becomes `frontend/`, a React app (React, `@vitejs/plugin-react`; no router, no state library, no CSS framework). The URL picks the view.
+- **Screens only show.** `ScreenView` is a fullscreen canvas and nothing else; a small debug overlay (connection status + fps) appears only with `?fps`.
+- **The remote controls.** `RemoteView` (`?view=remote`, meant for a phone) shows status, activity, mood and stats, with one large button per action, generated from `ACTIONS` so a new action appears automatically.
+- **Rooms are configuration, not code.** Per-room differences (today: a glow multiplier; Selene fights room light, so it glows brighter than Helios) are presets in `rooms.ts`, never branches inside components.
+- **One palette:** colors live as CSS variables in `styles.css`; `theme.ts` reads them for the canvas, so CSS and canvas can't disagree (the moon's shadow circle must be exactly the background).
+- **Lifecycle-safe:** the WebSocket and the animation loop live in React effects with cleanups (`close()`, `cancelAnimationFrame`, `ResizeObserver.disconnect`), so StrictMode's double mount in development doesn't leave a second socket or loop behind.
+- **Done when:** the screen works on the laptop at `?room=dev&fps`, the remote on a phone, a feed from the phone shows on the screen, both reconnect after a hub restart, and Selene at `?room=selene&fps` still runs at 57-60 fps.
+- **Status (Oct 2026): all working except the fps.** **Revisit:** Selene averages ~53 fps (M2: 57-59). Test one variable at a time: the glow (`dev` vs `selene` room), a production build vs dev, the old M2 page re-measured today, then the canvas size (fullscreen now, 70vh in M2; main suspect, since the orb and halo scale with height).
+
 ### M3: Handoffs with a fake stick
 - `tools/fake-stick`: a script that connects as the stick and can "flick," "carry" (record events), and "return."
 - The D3 transfer protocol end to end, with persisted transfer records on both sides; the screen animates leaving and arriving.
@@ -317,7 +340,7 @@ Each one ends with something visibly working, and a commit.
 ### M4: The hub on athena
 - athena already runs (Pi OS Lite, Docker + Compose, Caddy). In the **athena repo**: a `hub` stack (one container, a volume for resident state, on the internal Docker network), behind Caddy as `hub.domer.dev` (LAN/Tailscale only, like the other services).
 - Add the hub's state volume to `athena-backup`.
-- Kiosk on the host: Chromium fullscreen on the HDMI output to the TV, loading `screen/` as room Helios. The kiosk only drives the TV.
+- Kiosk on the host: Chromium fullscreen on the HDMI output to the TV, loading the frontend at `?room=helios`. The kiosk only drives the TV.
 - Selene: the hub launches our Cast receiver on the projector by IP and re-casts when the room drops (D12). Needs the page on HTTPS under a name the projector can resolve (section 8).
 - HDMI-CEC: the TV turns on when the pet wakes, and off at night.
 - **Done when:** unplug athena, plug it back in, and the pet is back on Helios and Selene without touching anything, with its state intact.
@@ -392,5 +415,6 @@ What to expect and how to keep it usable:
 - Public or private repo (sprite tool terms; secrets stay out either way).
 - Exact stat rates (tune by feel in M2). First simulation: grumpy for long stretches (the 20-30 energy band before every sleep, plus hunger), several naps per day, and the wake/sleep cycle doesn't line up with a real day.
 - Test on Selene: does a #05060a background read as "dark wall" with room lights on, or as gray? Decides how much the design leans on glow vs. contrast.
+- **Clients vs rooms (decide in M5):** the protocol's `hello { room }` field currently identifies *any* client, not only world rooms: the remote says hello as `remote` and the poke script as `poke`, though neither is a room the pet can enter. Should a client and a room be separate concepts (e.g. `hello { client, room? }`)?
 
 Resolved: **Docker or plain systemd on the Pi** -> the hub runs in Docker (athena is Compose-based); the kiosk runs on the host.

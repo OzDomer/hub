@@ -15,7 +15,7 @@ Read **PLAN.md** first. It's the source of truth for the design, the decisions (
 
 - TypeScript everywhere on the web side, npm workspaces (see PLAN.md section 4).
 - TS/JS without semicolons, formatted by hand. No Prettier.
-- File names are camelCase (`simulateDay.ts`), never kebab-case.
+- File names are camelCase (`simulateDay.ts`), never kebab-case. The one exception: React component files are PascalCase (`App.tsx`, `NyxCanvas.tsx`), the React convention.
 - `core/` and `world/` are pure: no timers, no I/O, time is passed in. Test them heavily with Vitest.
 - `core/` never references screens or positions on screens; that's `world/`'s job.
 - Outside `core`, act on Nyx only through `act()` (it ticks first). `applyAction` is internal to `core` and not in its package exports.
@@ -29,6 +29,9 @@ Read **PLAN.md** first. It's the source of truth for the design, the decisions (
 - Never amend a commit that's already pushed; make a follow-up commit.
 - Destructive shell commands (`mv`, `rm`) are given one per line, never as a multi-line block.
 - Tests live next to the code they test (`tick.ts` / `tick.test.ts`), not in a separate folder.
+- `frontend/`: screens never have controls; they only show. Input comes from the remote (`?view=remote`), the stick, or later the DualShock.
+- `frontend/`: per-room differences go in the `rooms.ts` presets, never in branches inside components (no `if (room.id === "selene")`).
+- `frontend/`: every color is a CSS variable in `styles.css`; the canvas gets colors only through `theme.ts`.
 
 ## Environment
 

@@ -5,50 +5,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nyx</title>
-  <style>
-    body {
-      margin: 0;
-      background: #05060a;
-      color: #dfe6ff;
-      font-family: system-ui, sans-serif;
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 70vh;
-    }
-
-    #connection,
-    #status,
-    #actions {
-      margin: 0.5rem 1.5rem;
-    }
-
-    button {
-      background: #141a2e;
-      color: #dfe6ff;
-      border: 1px solid #2a3458;
-      border-radius: 8px;
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-  </style>
 </head>
 
 <body>
-  <canvas id="world"></canvas>
-  <p id="connection">connecting...</p>
-      <p id="fps"></p>
-  <pre id="status"></pre>
-  <nav id="actions">
-    <button data-action="feed">feed</button>
-    <button data-action="play">play</button>
-    <button data-action="pet">pet</button>
-    <button data-action="wake">wake</button>
-  </nav>
-  <script type="module" src="/src/main.ts"></script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 
 </html>
