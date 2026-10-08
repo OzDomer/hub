@@ -337,7 +337,7 @@ What to expect and how to keep it usable:
 
 ## 8. Open questions
 
-- The pet's name and look.
+- The pet's look. Name resolved: **Nyx** (goddess of night; Greek naming alongside athena). **to be decided if** night is a design theme, not just a name: sleep is her element (possibly more active after dark), dark palette with a glow, a moon as the mood indicator, the lamp as her night-light. Decide specifics in M2.
 - Exact stat rates (tune by feel in M2).
 - The stick's offline rules: how simple can they be and still feel right?
 - What the flick gesture is exactly (a sharp acceleration spike past a threshold? a direction?). Tune with real IMU data from the stick spike's logger: record, look at the numbers, then set thresholds.
