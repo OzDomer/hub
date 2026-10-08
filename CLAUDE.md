@@ -22,6 +22,7 @@ Read **PLAN.md** first. It's the source of truth for the design, the decisions (
 - Secrets are never committed: `.env` and `stick/include/secrets.h` are gitignored. Commit an example file (`.env.example`, `secrets.example.h`) instead.
 - Line endings are LF (`.gitattributes`); the code runs on Linux.
 - No barrel files. Packages expose modules through explicit subpath exports in `package.json` (`@hub/core/math`); inside a package, use relative imports.
+- Commits follow Conventional Commits: `type(scope): description`, with scope = package folder (`core`, `server`, `stick`, ...).
 
 ## Environment
 
