@@ -4,6 +4,7 @@ import { ACTIONS } from "@hub/core/nyx"
 import { connect } from "./connection"
 import { drawFrame } from "./draw"
 import type { NyxView } from "./draw"
+import { createFpsMeter } from "./fpsMeter"
 
 const HUB_URL = `ws://${location.hostname}:8080/ws`
 const ROOM = new URLSearchParams(location.search).get("room") ?? "dev"
@@ -41,10 +42,19 @@ function resize() {
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
 }
 
+const params = new URLSearchParams(location.search)
+const fpsLine = element("fps")
+const countFrame = params.has("fps")
+  ? createFpsMeter((report) => {
+    fpsLine.textContent = report
+  })
+  : null
+
 window.addEventListener("resize", resize)
 resize()
 
 function frame(time: number) {
+  countFrame?.(time)
   drawFrame(ctx, canvas.clientWidth, canvas.clientHeight, view, time)
   requestAnimationFrame(frame)
 }
