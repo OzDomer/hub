@@ -1,0 +1,13 @@
+{
+  "name": "@hub/tools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+        "simulate": "tsx src/simulateDay.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hub/core": "*"
+  }
+}

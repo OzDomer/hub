@@ -5,7 +5,9 @@
     "type": "module",
     "exports": {
         "./math": "./src/math.ts",
-        "./pet": "./src/pet.ts",
+        "./nyx": "./src/nyx.ts",
+        "./config": "./src/config.ts",
+        "./tick": "./src/tick.ts",
         "./actions": "./src/actions.ts",
         "./mood": "./src/mood.ts"
     },
