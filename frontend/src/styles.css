@@ -43,3 +43,69 @@ body {
   margin: 2rem;
   font-size: 1.5rem;
 }
+
+.remote {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 2rem;
+}
+
+.remote-status {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+}
+
+.remote-headline {
+  margin: 0 0 1rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.remote-stats {
+  margin: 0 0 1.5rem;
+}
+
+.remote-stats div {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--button-border);
+  font-size: 1.15rem;
+}
+
+.remote-stats dd {
+  margin: 0;
+  text-align: right;
+}
+
+.remote-hint {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.remote-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.remote-actions button {
+  min-height: 4.5rem;
+  background: var(--button-background);
+  color: var(--button-text);
+  border: 1px solid var(--button-border);
+  border-radius: 12px;
+  font-size: 1.35rem;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+.remote-actions button:active {
+  background: var(--button-border);
+}
+
+.remote-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
