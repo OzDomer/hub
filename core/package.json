@@ -1,0 +1,13 @@
+{
+    "name": "@hub/core",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "exports": {
+        "./math": "./src/math.ts"
+    },
+    "scripts": {
+        "test": "vitest",
+        "typecheck": "tsc --noEmit"
+    }
+}

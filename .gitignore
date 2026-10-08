@@ -19,3 +19,8 @@ data/
 .DS_Store
 Thumbs.db
 *.log
+
+
+# claude
+CLAUDE.md
+PLAN.md

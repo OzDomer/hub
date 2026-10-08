@@ -21,6 +21,7 @@ Read **PLAN.md** first. It's the source of truth for the design, the decisions (
 - Test against fakes (a fake stick, fake screens, a fake clock) before real hardware. Before calling a test suite done, break the code on purpose once and confirm a test fails.
 - Secrets are never committed: `.env` and `stick/include/secrets.h` are gitignored. Commit an example file (`.env.example`, `secrets.example.h`) instead.
 - Line endings are LF (`.gitattributes`); the code runs on Linux.
+- No barrel files. Packages expose modules through explicit subpath exports in `package.json` (`@hub/core/math`); inside a package, use relative imports.
 
 ## Environment
 
