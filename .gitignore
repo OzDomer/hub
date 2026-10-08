@@ -1,0 +1,21 @@
+# dependencies & build output
+node_modules/
+dist/
+coverage/
+
+# PlatformIO build output (stick/ also has its own .gitignore)
+.pio/
+
+# secrets: commit .example versions instead
+.env
+.env.*
+!.env.example
+stick/include/secrets.h
+
+# local runtime data (pet state while developing)
+data/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.log

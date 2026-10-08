@@ -1,0 +1,6 @@
+{
+  "folders": [
+    { "path": ".", "name": "hub" },
+    { "path": "stick", "name": "stick (firmware)" }
+  ]
+}
