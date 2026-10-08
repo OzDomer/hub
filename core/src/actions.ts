@@ -6,6 +6,8 @@ import { clamp } from "./math"
 export type Action = "feed" | "play" | "pet" | "wake"
 
 export function applyAction(
+      const activity = activityAt(nyx, now)
+  if (activity === "eating") return nyx
     nyx: NyxState,
     action: Action,
     now: number,

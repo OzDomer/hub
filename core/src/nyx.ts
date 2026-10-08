@@ -1,4 +1,5 @@
 export type Activity = "idle" | "sleeping" | "eating" | "playing";
+export type Action = "feed" | "play" | "pet" | "wake"
 
 export interface Stats {
   readonly hunger: number    // 0 = full, 100 = starving
