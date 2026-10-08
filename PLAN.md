@@ -14,12 +14,13 @@ Naming: **"the hub"** is this project's server. **"The lamp hub"** is the server
 
 ```
 athena (Raspberry Pi 5 behind the TV, always on)
-├─ hub container (Node/TS): owns the pet + the world, reads sources, WebSocket pub/sub
-├─ Chromium kiosk (on the host, not a container): HDMI 1 -> TV, HDMI 2 -> projector
+├─ hub container (Node/TS): owns the pet + the world, reads sources, WebSocket pub/sub;
+│    casts the screen page to the projector over WiFi (Google Cast, D12)
+├─ Chromium kiosk (on the host, not a container): HDMI -> TV
 ├─ HDMI-CEC: TV on/off from code
 └─ other stacks (separate repos/compose): lamp hub, Uptime Kuma, Prometheus later
                      ▲
-          WebSocket (topics: pet, world, lamp, metrics, ...)
+          WebSocket (topics: nyx, world, lamp, metrics, ...)
                      │
      ┌───────────────┼─────────────────────┐
  TV + projector     laptop overlay          M5StickS3
@@ -29,7 +30,7 @@ athena (Raspberry Pi 5 behind the TV, always on)
 | Piece | Runs on | Role |
 |---|---|---|
 | **hub** | athena, Docker | Owns the pet and the world. Reads other sources. Pushes topics to screens. Decides handoffs. |
-| **screen** | Chromium (TV, projector), Electron (laptop) | Draws its part of the world and its HUD widgets. Sends input. Never decides anything. |
+| **screen** | Chromium kiosk on athena (TV), our Cast receiver on the projector itself (D12), Electron (laptop) | Draws its part of the world and its HUD widgets. Sends input. Never decides anything. |
 | **stick** | M5StickS3 | A screen while home; the pet's owner while carried (D2). Detects the flick (IMU). |
 | **lamp** | the i_Lamp, via the lamp hub (`ilamp` repo) | A source the hub talks to over WebSocket. Never imported. |
 
@@ -40,7 +41,7 @@ athena (Raspberry Pi 5 behind the TV, always on)
 [ TV ] [ mon 1 ] [ mon 2 ] [ mon 3 ]
 ```
 
-The TV is directly left of monitor 1. The projector sits on a stand and projects onto the wall above the monitors. Both the TV and the projector are driven by the Pi's two HDMI outputs, so the laptop's outputs stay free and those two screens are always available.
+The TV is directly left of monitor 1. The projector projects onto the wall above the monitors (placement in section 6). The TV is driven by the Pi's HDMI; the projector is wireless and runs the screen page itself through Google Cast (D12). Neither depends on the laptop, whose outputs are full. In the world, the TV is the room **Helios** and the projector is **Selene** (D10).
 
 ---
 
@@ -132,9 +133,9 @@ That reads as: left home, fed 20 minutes later, played at 35 minutes, came back 
 
 ### D6: JSON messages over WebSocket, typed in one place, organized by topic
 
-All messages are `{ "type": "...", ...fields }`. The types and validation schemas live in `shared/` and are imported by the hub and the screens. The ESP32 parses the same JSON (ArduinoJson). The hub **validates every incoming message** (zod or similar) before acting: nothing unvalidated reaches the pet.
+All messages are `{ "type": "...", ...fields }`. The types and validation schemas live in `shared/` and are imported by the hub and the screens. The ESP32 parses the same JSON (ArduinoJson). The hub **validates every incoming message** (zod, D13) before acting: nothing unvalidated reaches the pet.
 
-**Pub/sub by topic:** a client subscribes to the topics it needs (`pet`, `world`, `lamp`, `metrics`, ...) and only receives those. The TV can take everything; the stick only takes `pet`. Adding a feature means a new source and a new topic; clients that don't care are unaffected.
+**Pub/sub by topic:** a client subscribes to the topics it needs (`nyx`, `world`, `lamp`, `metrics`, ...) and only receives those. The TV can take everything; the stick only takes `nyx`. Adding a feature means a new source and a new topic; clients that don't care are unaffected.
 
 ### D7: Persistence as a JSON file at first
 
@@ -186,7 +187,8 @@ One Node process (one container) on athena. Screens talk only to the hub, never 
 
 ### D10: The world is a graph of rooms (leaning; finalize in M5)
 
-- **Each screen is a room.** Rooms connect by **edges** (adjacent screens, which should feel continuous: TV <-> mon 1 <-> mon 2 <-> mon 3) and **doors** (non-adjacent: the monitors up to the projector).
+- **Each screen is a room.** Rooms connect by **edges** (adjacent screens, which should feel continuous: Helios <-> mon 1 <-> mon 2 <-> mon 3) and **doors** (non-adjacent: the monitors up to Selene).
+- **Room ids for the big screens:** the projector is **Selene** (moon goddess: the moon reflects light, and a projected image is light reflected off the wall). The TV is **Helios** (sun god: a screen that emits its own light). Siblings in the myths. "Projector" and "TV" still mean the hardware.
 - **Screens come and go** (the laptop sleeps, the projector is off). Rooms are present or absent. The pet only enters present rooms; if its room disappears, the world moves it to a sensible present room.
 - **The hub sends movement intents, not positions:** "walking from A to B, started at hub time T, speed S". Each screen computes the position for every frame. Traffic stays tiny and the animation smooth. Needs a rough clock sync between screens and the hub (a ping exchange).
 - **The stick is a room while home and the owner while carried.** The D3 handoffs are the border between those two roles.
@@ -201,6 +203,27 @@ One Node process (one container) on athena. Screens talk only to the hub, never 
 - **`ilamp`:** stays separate. The hub talks to the lamp hub over WebSocket.
 - **Rejected:** hub code inside athena (every app commit becomes a deploy commit, and athena stops being a clean runbook); a separate HUD repo (the shared protocol would drift between repos, with no team boundary to justify it).
 
+### D12: Selene runs the screen page itself, through our own Cast receiver
+
+The projector is wireless, so nothing on athena renders for it. It's a Google TV with Google Cast built in (section 6), and athena can tell it what to show.
+
+- **Tested:** from athena, `catt -d 192.168.1.167 ...` works. athena can launch Cast receivers on the projector.
+- **Tested, fails:** `catt cast_site` (the generic DashCast receiver). It "force loads" by navigating away from the receiver page, and Google TV ends the session and returns to the home screen.
+- **Plan:** our own registered Cast receiver app (Google Cast developer console, one-time $5; the projector is registered as a test device, so nothing is published). The receiver page is the `screen` page (or a thin shell around it) with the idle timeout disabled. The hub re-casts automatically when the Selene room disconnects (it already tracks screen presence, D10). Build it in M2/M4, once a page exists.
+- **Requirements:** the receiver URL must be HTTPS and reachable from the projector (DNS is an open question, section 8). Cast discovery (mDNS) is blocked by ufw and doesn't cross into Docker, so the projector is addressed by IP.
+- **Fallback:** a kiosk browser app on the projector (e.g. Fully Kiosk Browser) pointed at the page, auto-launching on boot.
+- **Rejected:** an HDMI cable from the Pi (Oz doesn't want the projector cabled); the laptop driving it (its outputs are full).
+- **Open risk:** the projector's chip renders the page, not the Pi (the TV's own browser managed ~12fps). Test the frame rate in M2.
+
+### D13: Protocol and transport: zod schemas in `shared/`, full snapshots, the `ws` package
+
+- **zod schemas, TS types derived with `z.infer`**, so the schema and the type can't disagree.
+- **First messages** (each `{ type, ...fields }`, D6): screen -> hub `hello { room, topics }`, `act { action }`; hub -> screen `nyx { state, mood }`, `error { reason }`.
+- **Full snapshots, not diffs:** `nyx` goes out on subscribe and on every change. The state is tiny, and a reconnect is trivial: the next snapshot is the whole truth.
+- **Transport: the `ws` package.** Node 24 has a built-in WebSocket client but no server.
+- **An invalid message gets `error` back, never a crash** (validation itself is D6).
+- **Rejected:** Socket.IO. It runs its own protocol on top of WebSocket, which would make the ESP32 client in M6 much harder.
+
 ---
 
 ## 3. The pet itself (first version)
@@ -210,9 +233,10 @@ Keep it small; it can grow later.
 - **Stats** (0-100): `hunger`, `energy`, `happiness`. They drift over time: hunger rises, energy falls while awake and recovers while sleeping, happiness follows the other two.
 - **Three independent dimensions, not one state.** A pet can be happy *while* sleeping, so these never share a field:
   - **Mood** (derived from the stats): `happy`, `content`, `sad`, `grumpy`.
-  - **Activity** (what it's doing): `idle`, `walking`, `sleeping`, `eating`, `playing`.
+  - **Activity** (what it's doing): `idle`, `sleeping`, `eating`, `playing`.
   - **Presence** (who owns it, from the transfer records in D3): `home`, `stick`, `in_transit`.
 - **Where it is on the home screens** is not part of the pet. That's the world's job (D10).
+- **Movement belongs to the world too:** walking is a world movement intent (D10), not an activity, and arrives in M5.
 - **Animation picks by activity, with mood as a modifier:** a sleeping animation with a smile, a walk that droops when sad. Presence and the world decide *which screen* draws it.
 - **Actions** (from any client): `feed`, `play`, `pet`, `wake`.
 - **Rules are data where possible** (rates and thresholds in one config), so tuning doesn't mean hunting through code.
@@ -258,8 +282,22 @@ Each one ends with something visibly working, and a commit.
 - **Status: done (Oct 2026).** core: state, config, tick (whole steps, call-rhythm independent), actions (eating blocks, wake grace), derived mood. tools: one-day simulation CLI.
 
 ### M2: The pet on a screen (laptop browser)
-- `server`: the hub process, with the pet as its first resident: ticks it, persists it, WebSocket transport with topics.
-- `screen`: canvas, one sprite, idle/walk/sleep animations, stats shown. Sends `feed`/`play`, re-renders on state pushed from the hub.
+- `shared/`: the zod schemas and `z.infer` types for the first messages (D13).
+- `server/`: the hub process. Nyx is the first resident, with an injected `clock` (a `now()` function) and `store` (load/save). Tests use a fake clock and an in-memory store; production uses `Date.now` and a JSON file.
+  - **Boot:** load `data/nyx.json`, or `createNyx(now)` if there's none, then tick to now (catch-up for the time the hub was down).
+  - **Running:** a timer ticks every `stepMs`. Persist + broadcast only when the result `!==` the old state (`tick` returns the same object when no step has passed).
+  - **Actions go through `act()`.** Persistence per D7 (temp file + rename, async only).
+- **Transport:** `ws` (D13). Every incoming message is validated before anything acts on it; invalid -> `error`, never a crash.
+- `screen/`: Vite + TS + canvas. In dev, Vite serves the page, which connects to `ws://localhost:8080`. Later the hub serves the built page itself: one origin, one HTTPS cert, which also suits the Cast receiver (D12). Shows the stats; buttons send `act`; re-renders on every `nyx` snapshot.
+- **Placeholder art:** Nyx as a glowing orb drawn with canvas shapes, with a moon phase showing mood. Idle = slow float, sleeping = dim + drifting z's, eating/playing = a pulse.
+- **Walking moves to M5.** `core` has no walking, and with one screen there's nowhere to walk.
+- **Check the frame rate on the projector** once the page exists (D12's open risk).
+- **Build order, each step committed:**
+  1. `shared` schemas + tests.
+  2. `server` resident with a fake clock and store + tests, including a restart.
+  3. `ws` transport + validation + a poke script.
+  4. The `screen` page.
+  5. The done-when check, for real.
 - **Done when:** the pet lives in a laptop browser tab, keeps living across a hub restart, and buttons affect it.
 
 ### M3: Handoffs with a fake stick
@@ -278,14 +316,15 @@ Each one ends with something visibly working, and a commit.
 ### M4: The hub on athena
 - athena already runs (Pi OS Lite, Docker + Compose, Caddy). In the **athena repo**: a `hub` stack (one container, a volume for resident state, on the internal Docker network), behind Caddy as `hub.domer.dev` (LAN/Tailscale only, like the other services).
 - Add the hub's state volume to `athena-backup`.
-- Kiosk on the host: Chromium fullscreen on HDMI 1 (TV) and HDMI 2 (projector), each loading `screen/` with its room id.
+- Kiosk on the host: Chromium fullscreen on the HDMI output to the TV, loading `screen/` as room Helios. The kiosk only drives the TV.
+- Selene: the hub launches our Cast receiver on the projector by IP and re-casts when the room drops (D12). Needs the page on HTTPS under a name the projector can resolve (section 8).
 - HDMI-CEC: the TV turns on when the pet wakes, and off at night.
-- **Done when:** unplug athena, plug it back in, and the pet is back on the TV and the projector without touching anything, with its state intact.
+- **Done when:** unplug athena, plug it back in, and the pet is back on Helios and Selene without touching anything, with its state intact.
 
 ### M5: The world (many screens)
 - `world/`: rooms, edges, doors, presence, movement intents (D10). Pure, tested with fake screens joining and leaving.
 - Clock sync between screens and the hub.
-- The pet walks between the TV, the projector and a laptop browser window.
+- The pet walks between Helios, Selene and a laptop browser window (walking, including its animation, moved here from M2).
 - **Done when:** the pet walks across screens, survives a screen turning off mid-walk, and looks consistent on every screen.
 
 ### M6: The real stick
@@ -312,10 +351,14 @@ Small firmware experiments that teach C++ and answer open questions, without bui
 
 ## 6. Hardware notes
 
-- **athena:** Raspberry Pi 5 4GB, Raspberry Pi OS Lite (Trixie), headless over SSH, Docker + Compose, Caddy (`*.domer.dev`, LAN/Tailscale only). Boot from NVMe planned (M.2 HAT+ on the way). **Two micro-HDMI outputs** -> the TV and the projector. Pi OS Lite has no desktop, so the kiosk needs a minimal compositor (see open questions).
-- **TV:** Samsung UA40J5200 (2015), directly left of monitor 1. Its own browser managed ~12fps, so we don't render on it; the Pi's Chromium does.
-- **Projector:** Aurzen, on a stand, projecting onto the wall above the monitors. Driven by the Pi's second HDMI. **Needs a long enough micro-HDMI -> HDMI cable** from behind the TV to the stand; measure it (passive HDMI is fine up to ~5 m).
-- **Laptop:** three monitors; its outputs are full, which is why the projector hangs off the Pi.
+- **athena:** Raspberry Pi 5 4GB, Raspberry Pi OS Lite (Trixie), headless over SSH, Docker + Compose, Caddy (`*.domer.dev`, LAN/Tailscale only). Boot from NVMe planned (M.2 HAT+ on the way). LAN IP 192.168.1.165. **One micro-HDMI output -> the TV**; the projector is wireless (D12). Pi OS Lite has no desktop, so the kiosk needs a minimal compositor (see open questions).
+- **athena's network:** currently on WiFi (`wlan0`), sitting on the desk. Ping to the projector (both on WiFi) is ~50-75 ms. Wire it via the in-wall Ethernet when it moves behind the TV. Not urgent: the D10 intents design already tolerates latency.
+- **TV (Helios):** Samsung UA40J5200 (2015), directly left of monitor 1. Its own browser managed ~12fps, so we don't render on it; the Pi's Chromium does.
+- **Projector (Selene):** Aurzen EAZZE D1 Max, projecting onto the wall above the monitors. Google TV 14 (Android TV 14), Google Cast built in, native 1920x1080, MediaTek MT9676 (quad Cortex-A55, 1.5 GHz), Mali-G52 MP2, 2 GB RAM, 1000 ANSI lumens. Wireless: it runs the screen page itself (D12). Set its Cast device name to "Selene".
+  - **Clearly visible with the room lights on, but it can't project black** (black = the wall's color). Design Nyx as a light source on a dark page.
+  - **Network:** LAN IP 192.168.1.167, DHCP-reserved on the router with its real MAC. Android MAC randomization is turned off for this network (a randomized MAC can rotate and silently break the reservation).
+  - **Placement:** currently on the bed, propped on books, firing at an angle, which causes heavy keystone. Plan: a tripod/light stand or a small shelf square across from the image center, with minimal digital keystone (it resamples the image, which blurs small text and pixel art). Final spot TBD.
+- **Laptop:** three monitors; its outputs are full, so it can't drive the projector either.
 - **M5StickS3:** ESP32-S3-PICO-1-N8R8 (dual-core 240 MHz, 8 MB flash, **8 MB octal PSRAM**), 1.14" 240x135 IPS (ST7789P3), BMI270 6-axis IMU, ES8311 codec + mic + 1 W speaker, IR TX/RX, 250 mAh battery, two user buttons (G11, G12), **no RTC chip**. Flashing gotchas in D8.
 - **Pi Bluetooth** may serve the lamp hub (BLE) *and* a DualShock (classic) at once. That usually works, but verify it.
 - **The lamp** must be within BLE range of the Pi if the lamp hub moves there.
@@ -339,12 +382,12 @@ What to expect and how to keep it usable:
 ## 8. Open questions
 
 - The pet's look. Name resolved: **Nyx** (goddess of night; Greek naming alongside athena). **to be decided if** night is a design theme, not just a name: sleep is her element (possibly more active after dark), dark palette with a glow, a moon as the mood indicator, the lamp as her night-light. Decide specifics in M2.
-- Exact stat rates (tune by feel in M2).
 - The stick's offline rules: how simple can they be and still feel right?
 - What the flick gesture is exactly (a sharp acceleration spike past a threshold? a direction?). Tune with real IMU data from the stick spike's logger: record, look at the numbers, then set thresholds.
 - World details (D10): edge vs door rules, how the pet picks where to go, how far off the clock sync can be before it looks wrong.
-- Kiosk on Pi OS Lite: which minimal compositor (e.g. cage or labwc), and one Chromium window per HDMI output.
-- The projector cable length from the Pi to the stand.
+- Kiosk on Pi OS Lite: which minimal compositor (e.g. cage or labwc) for one fullscreen Chromium on the TV.
+- **DNS for Selene:** the projector uses the router's DNS, not AdGuard via Tailscale, so it can't resolve `*.domer.dev` (and D12 needs an HTTPS URL it can reach). Option: a Cloudflare record such as `nyx.domer.dev -> 192.168.1.165` (athena's LAN IP). It's unreachable from the internet, but it publishes that the name exists, which bends the "homelab names stay private" rule. Undecided.
+- The projector's final spot (section 6).
 - Public or private repo (sprite tool terms; secrets stay out either way).
 - Exact stat rates (tune by feel in M2). First simulation: grumpy for long stretches (the 20-30 energy band before every sleep, plus hunger), several naps per day, and the wake/sleep cycle doesn't line up with a real day.
 

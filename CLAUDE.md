@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Read **PLAN.md** first. It's the source of truth for the design, the decisions (D1-D11), and the milestones (M1-M7, plus the parallel stick spike). When a decision changes, update PLAN.md and say why.
+Read **PLAN.md** first. It's the source of truth for the design, the decisions (D1-D13), and the milestones (M1-M7, plus the parallel stick spike). When a decision changes, update PLAN.md and say why.
 
 ## How Oz likes to work
 
@@ -14,8 +14,11 @@ Read **PLAN.md** first. It's the source of truth for the design, the decisions (
 ## Conventions
 
 - TypeScript everywhere on the web side, npm workspaces (see PLAN.md section 4).
+- TS/JS without semicolons, formatted by hand. No Prettier.
+- File names are camelCase (`simulateDay.ts`), never kebab-case.
 - `core/` and `world/` are pure: no timers, no I/O, time is passed in. Test them heavily with Vitest.
 - `core/` never references screens or positions on screens; that's `world/`'s job.
+- Outside `core`, act on Nyx only through `act()` (it ticks first). `applyAction` is internal to `core` and not in its package exports.
 - The hub server does only small, bounded work per event (PLAN.md D9): no `*Sync` file APIs, a timeout on every request to a source or worker, and every source catches its own errors.
 - Every incoming WebSocket message is validated against the schemas in `shared/` before anything acts on it.
 - Test against fakes (a fake stick, fake screens, a fake clock) before real hardware. Before calling a test suite done, break the code on purpose once and confirm a test fails.
@@ -23,11 +26,14 @@ Read **PLAN.md** first. It's the source of truth for the design, the decisions (
 - Line endings are LF (`.gitattributes`); the code runs on Linux.
 - No barrel files. Packages expose modules through explicit subpath exports in `package.json` (`@hub/core/math`); inside a package, use relative imports.
 - Commits follow Conventional Commits: `type(scope): description`, with scope = package folder (`core`, `server`, `stick`, ...).
+- Never amend a commit that's already pushed; make a follow-up commit.
+- Destructive shell commands (`mv`, `rm`) are given one per line, never as a multi-line block.
 - Tests live next to the code they test (`tick.ts` / `tick.test.ts`), not in a separate folder.
 
 ## Environment
 
 - Development: Windows, Git Bash, VS Code. **Open `hub.code-workspace`, not the folder:** PlatformIO only activates when `platformio.ini` is at the root of a workspace folder, so `stick/` is its own workspace folder.
-- The hub runs on **athena** (Raspberry Pi 5, Raspberry Pi OS Lite, Docker + Compose, Caddy), deployed from the separate, infra-only **athena** repo (github.com/OzDomer/athena, private). This repo never contains deploy config; athena never contains hub code.
+- The hub runs on **athena** (Raspberry Pi 5, Raspberry Pi OS Lite, Docker + Compose, Caddy; LAN IP 192.168.1.165), deployed from the separate, infra-only **athena** repo (github.com/OzDomer/athena, private). This repo never contains deploy config; athena never contains hub code.
+- The big screens (room ids in the world): the TV is **Helios** (athena's HDMI + Chromium kiosk); the projector is **Selene** (wireless Google TV at 192.168.1.167, shows the page via our Cast receiver, PLAN.md D12).
 - The stick: M5StickS3 over USB. Flashing and serial gotchas (download mode, octal PSRAM, `Serial.begin`, busy COM port) are in PLAN.md D8.
 - Related project: github.com/OzDomer/ilamp (the lamp hub). The hub talks to it over WebSocket and never imports `ilamp`. Naming: **"the hub"** is this project; **"the lamp hub"** is ilamp's server.
