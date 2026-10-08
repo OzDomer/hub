@@ -1,8 +1,7 @@
-import type { NyxState } from "@hub/core/nyx"
-import type { Action } from "@hub/core/actions"
+import type { NyxState, Action } from "@hub/core/nyx"
 import { createNyx } from "@hub/core/nyx"
 import { tick } from "@hub/core/tick"
-import { applyAction } from "@hub/core/actions"
+import { act } from "@hub/core/act"
 import { moodOf } from "@hub/core/mood"
 import { HOUR, MINUTE } from "@hub/core/config"
 
@@ -32,7 +31,7 @@ function print(offset: number, nyx: NyxState, note: string): void {
   const { hunger, energy, happiness } = nyx.stats
   console.log(
     `${clock(offset)}  ${nyx.activity.padEnd(8)} ${moodOf(nyx).padEnd(7)}` +
-      `  hunger ${num(hunger)}  energy ${num(energy)}  happy ${num(happiness)}  ${note}`,
+    `  hunger ${num(hunger)}  energy ${num(energy)}  happy ${num(happiness)}  ${note}`,
   )
 }
 
@@ -45,7 +44,7 @@ for (let t = MINUTE; t <= DAY; t += MINUTE) {
 
   const action = events.get(t)
   if (action) {
-    nyx = applyAction(nyx, action, t)
+    nyx = act(nyx, action, t)
     print(t, nyx, `<- ${action}`)
   } else if (nyx.activity !== before) {
     print(t, nyx, `-> ${nyx.activity}`)

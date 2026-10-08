@@ -8,7 +8,7 @@
         "./nyx": "./src/nyx.ts",
         "./config": "./src/config.ts",
         "./tick": "./src/tick.ts",
-        "./actions": "./src/actions.ts",
+            "./act": "./src/act.ts",
         "./mood": "./src/mood.ts"
     },
     "scripts": {
