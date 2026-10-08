@@ -18,11 +18,13 @@ export interface NyxConfig {
 
     readonly eatDurationMs: number
     readonly playDurationMs: number
+    readonly wakeGraceMs: number
 
     readonly happinessDecayPerHour: number
     readonly happinessRecoveryPerHour: number
     readonly unhappyAboveHunger: number
     readonly unhappyBelowEnergy: number
+
 }
 
 export const defaultConfig: NyxConfig = {
@@ -42,6 +44,7 @@ export const defaultConfig: NyxConfig = {
 
     eatDurationMs: 2 * MINUTE,
     playDurationMs: 5 * MINUTE,
+    wakeGraceMs: 30 * MINUTE,
 
     happinessDecayPerHour: 8,
     happinessRecoveryPerHour: 3,
