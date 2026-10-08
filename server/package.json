@@ -1,0 +1,13 @@
+{
+  "name": "@hub/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hub/core": "*"
+  }
+}

@@ -5,7 +5,8 @@
   "workspaces": [
     "core",
     "tools",
-    "shared"
+    "shared",
+    "server"
   ],
   "scripts": {
     "test": "vitest",
