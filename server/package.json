@@ -8,6 +8,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@hub/core": "*"
+    "@hub/core": "*",
+    "@hub/shared": "^0.0.0",
+    "express": "^5.2.1",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/ws": "^8.18.2"
   }
 }
