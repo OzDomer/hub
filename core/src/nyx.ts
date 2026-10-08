@@ -1,16 +1,17 @@
 export type Activity = "idle" | "sleeping" | "eating" | "playing";
 
 export interface Stats {
-  readonly hunger: number;    // 0 = full, 100 = starving
-  readonly energy: number;    // 0 = exhausted, 100 = fully rested
-  readonly happiness: number; // 0 = miserable, 100 = ecstatic
+  readonly hunger: number    // 0 = full, 100 = starving
+  readonly energy: number;   // 0 = exhausted, 100 = fully rested
+  readonly happiness: number // 0 = miserable, 100 = ecstatic
 }
 
 export interface NyxState {
-  readonly stats: Stats;
-  readonly activity: Activity;
-  readonly activityEndsAt: number | null;
-  readonly lastTickAt: number;
+  readonly stats: Stats
+  readonly activity: Activity
+  readonly activityEndsAt: number | null
+  readonly lastTickAt: number
+  readonly forcedAwakeUntil: number | null
 }
 
 export function createNyx(now: number): NyxState {
@@ -19,5 +20,6 @@ export function createNyx(now: number): NyxState {
     activity: "idle",
     activityEndsAt: null,
     lastTickAt: now,
-  };
+    forcedAwakeUntil: null
+  }
 }
