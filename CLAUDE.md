@@ -23,6 +23,7 @@ Read **PLAN.md** first. It's the source of truth for the design, the decisions (
 - Line endings are LF (`.gitattributes`); the code runs on Linux.
 - No barrel files. Packages expose modules through explicit subpath exports in `package.json` (`@hub/core/math`); inside a package, use relative imports.
 - Commits follow Conventional Commits: `type(scope): description`, with scope = package folder (`core`, `server`, `stick`, ...).
+- Tests live next to the code they test (`tick.ts` / `tick.test.ts`), not in a separate folder.
 
 ## Environment
 
