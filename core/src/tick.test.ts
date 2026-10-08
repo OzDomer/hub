@@ -92,4 +92,12 @@ describe("tick", () => {
     expect(partial.lastTickAt).toBe(T0 + 2 * MINUTE)
     expect(tick(start, T0 + 50_000)).toBe(start)
   })
+  it("does not lose happiness from tiredness while asleep", () => {
+    const sleepy = {
+      ...createNyx(T0),
+      activity: "sleeping" as const,
+      stats: { hunger: 20, energy: 10, happiness: 50 },
+    }
+    expect(tick(sleepy, T0 + HOUR).stats.happiness).toBeGreaterThan(50)
+  })
 })
