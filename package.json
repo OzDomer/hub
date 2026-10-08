@@ -4,7 +4,8 @@
   "type": "module",
   "workspaces": [
     "core",
-    "tools"
+    "tools",
+    "shared"
   ],
   "scripts": {
     "test": "vitest",

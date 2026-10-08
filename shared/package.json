@@ -1,0 +1,17 @@
+{
+  "name": "@hub/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./messages": "./src/messages.ts"
+  },
+  "scripts": {
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hub/core": "*",
+    "zod": "^4.6.5"
+  }
+}
