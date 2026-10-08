@@ -1,5 +1,6 @@
 export type Activity = "idle" | "sleeping" | "eating" | "playing"
-export type Action = "feed" | "play" | "pet" | "wake"
+export const ACTIONS = ["feed", "play", "pet", "wake"] as const
+export type Action = (typeof ACTIONS)[number]
 
 export interface Stats {
   readonly hunger: number    // 0 = full, 100 = starving
