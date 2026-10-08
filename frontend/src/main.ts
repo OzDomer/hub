@@ -1,10 +1,12 @@
 import type { ServerMessage } from "@hub/shared/messages"
 import type { Action } from "@hub/core/nyx"
 import { ACTIONS } from "@hub/core/nyx"
-import { connect } from "./connection"
-import { drawFrame } from "./draw"
-import type { NyxView } from "./draw"
-import { createFpsMeter } from "./fpsMeter"
+import "./styles.css"
+import { connect, statusText } from "./hub/connection"
+import { drawFrame } from "./nyx/draw"
+import type { NyxView } from "./nyx/draw"
+import { createFpsMeter } from "./debug/fpsMeter"
+import { readTheme } from "./theme"
 
 const HUB_URL = `ws://${location.hostname}:8080/ws`
 const ROOM = new URLSearchParams(location.search).get("room") ?? "dev"
@@ -34,6 +36,7 @@ const canvas = canvasElement("world")
 const ctx = context2d(canvas)
 
 let view: NyxView | null = null
+const theme = readTheme()
 
 function resize() {
   const ratio = window.devicePixelRatio || 1
@@ -55,7 +58,7 @@ resize()
 
 function frame(time: number) {
   countFrame?.(time)
-  drawFrame(ctx, canvas.clientWidth, canvas.clientHeight, view, time)
+  drawFrame(ctx, canvas.clientWidth, canvas.clientHeight, view, time, theme)
   requestAnimationFrame(frame)
 }
 
@@ -84,8 +87,8 @@ const connection = connect({
   url: HUB_URL,
   hello: { type: "hello", room: ROOM, topics: ["nyx"] },
   onMessage: show,
-  onStatus: (text) => {
-    connectionLine.textContent = text
+  onStatus: (status) => {
+    connectionLine.textContent = statusText(status)
   },
 })
 

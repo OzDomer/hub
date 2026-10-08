@@ -1,13 +1,11 @@
 import type { Activity } from "@hub/core/nyx"
 import type { Mood } from "@hub/core/mood"
+import type { Theme } from "../theme"
 
 export interface NyxView {
   activity: Activity
   mood: Mood
 }
-
-const BACKGROUND = "#05060a"
-const GLOW = "200, 215, 255"
 
 const MOON_SHADOW: Record<Mood, number> = {
   happy: 0,
@@ -22,8 +20,9 @@ export function drawFrame(
   height: number,
   view: NyxView | null,
   time: number,
+  theme: Theme,
 ): void {
-  ctx.fillStyle = BACKGROUND
+  ctx.fillStyle = theme.background
   ctx.fillRect(0, 0, width, height)
   if (view === null) return
 
@@ -32,9 +31,9 @@ export function drawFrame(
   const y = height / 2 + bob(view.activity, time) * radius
   const brightness = view.activity === "sleeping" ? 0.45 : 1
 
-  drawOrb(ctx, x, y, radius * pulse(view.activity, time), brightness)
-  drawMoon(ctx, x, y - radius * 3.2, radius * 0.45, view.mood)
-  if (view.activity === "sleeping") drawZs(ctx, x + radius, y - radius, radius, time)
+  drawOrb(ctx, x, y, radius * pulse(view.activity, time), brightness, theme)
+  drawMoon(ctx, x, y - radius * 3.2, radius * 0.45, view.mood, theme)
+  if (view.activity === "sleeping") drawZs(ctx, x + radius, y - radius, radius, time, theme)
 }
 
 function bob(activity: Activity, time: number): number {
@@ -55,17 +54,18 @@ function drawOrb(
   y: number,
   radius: number,
   brightness: number,
+  theme: Theme,
 ): void {
   const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 2.5)
-  glow.addColorStop(0, `rgba(${GLOW}, ${0.9 * brightness})`)
-  glow.addColorStop(0.35, `rgba(${GLOW}, ${0.35 * brightness})`)
-  glow.addColorStop(1, `rgba(${GLOW}, 0)`)
+  glow.addColorStop(0, `rgb(${theme.glow} / ${0.9 * brightness})`)
+  glow.addColorStop(0.35, `rgb(${theme.glow} / ${0.35 * brightness})`)
+  glow.addColorStop(1, `rgb(${theme.glow} / 0)`)
   ctx.fillStyle = glow
   ctx.beginPath()
   ctx.arc(x, y, radius * 2.5, 0, Math.PI * 2)
   ctx.fill()
 
-  ctx.fillStyle = `rgba(240, 245, 255, ${brightness})`
+  ctx.fillStyle = `rgb(${theme.core} / ${brightness})`
   ctx.beginPath()
   ctx.arc(x, y, radius, 0, Math.PI * 2)
   ctx.fill()
@@ -77,8 +77,9 @@ function drawMoon(
   y: number,
   radius: number,
   mood: Mood,
+  theme: Theme,
 ): void {
-  ctx.fillStyle = mood === "grumpy" ? "#ffb4a2" : "#f4f1e6"
+  ctx.fillStyle = mood === "grumpy" ? theme.moonGrumpy : theme.moon
   ctx.beginPath()
   ctx.arc(x, y, radius, 0, Math.PI * 2)
   ctx.fill()
@@ -86,7 +87,7 @@ function drawMoon(
   const shadow = MOON_SHADOW[mood]
   if (shadow === 0) return
 
-  ctx.fillStyle = BACKGROUND
+  ctx.fillStyle = theme.background
   ctx.beginPath()
   ctx.arc(x + 2 * radius * (1 - shadow), y, radius, 0, Math.PI * 2)
   ctx.fill()
@@ -98,8 +99,9 @@ function drawZs(
   y: number,
   size: number,
   time: number,
+  theme: Theme,
 ): void {
-  ctx.fillStyle = "#dfe6ff"
+  ctx.fillStyle = theme.text
   for (let i = 0; i < 3; i++) {
     const t = (time / 2500 + i / 3) % 1
     ctx.globalAlpha = 1 - t
