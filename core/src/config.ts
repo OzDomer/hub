@@ -24,6 +24,8 @@ export interface NyxConfig {
     readonly happinessRecoveryPerHour: number
     readonly unhappyAboveHunger: number
     readonly unhappyBelowEnergy: number
+    readonly happyAtLeast: number
+    readonly sadBelow: number
 
 }
 
@@ -50,4 +52,7 @@ export const defaultConfig: NyxConfig = {
     happinessRecoveryPerHour: 3,
     unhappyAboveHunger: 60,
     unhappyBelowEnergy: 30,
+    happyAtLeast: 70,
+    sadBelow: 30,
+
 }
