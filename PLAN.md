@@ -299,6 +299,7 @@ Each one ends with something visibly working, and a commit.
   4. The `screen` page.
   5. The done-when check, for real.
 - **Done when:** the pet lives in a laptop browser tab, keeps living across a hub restart, and buttons affect it.
+- **Status: done (Oct 2026).** Nyx lives in the hub (ticking, persisted to JSON, survives restarts), with a WebSocket transport (zod-validated, broadcast to all subscribers) on an Express server, plus a Vite screen page: a glowing orb with a moon for mood, live updates, action buttons, auto-reconnect. Tested on Selene through a browser app over the LAN: 57-59 fps (60 Hz output) idle and during the play pulse; with room lights on, the dark background nearly vanishes into the wall, confirming the light-on-dark design.
 
 ### M3: Handoffs with a fake stick
 - `tools/fake-stick`: a script that connects as the stick and can "flick," "carry" (record events), and "return."
@@ -390,5 +391,6 @@ What to expect and how to keep it usable:
 - The projector's final spot (section 6).
 - Public or private repo (sprite tool terms; secrets stay out either way).
 - Exact stat rates (tune by feel in M2). First simulation: grumpy for long stretches (the 20-30 energy band before every sleep, plus hunger), several naps per day, and the wake/sleep cycle doesn't line up with a real day.
+- Test on Selene: does a #05060a background read as "dark wall" with room lights on, or as gray? Decides how much the design leans on glow vs. contrast.
 
 Resolved: **Docker or plain systemd on the Pi** -> the hub runs in Docker (athena is Compose-based); the kiosk runs on the host.
