@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import { createNyx } from "../src/nyx"
 
-describe("createPet", () => {
+describe("createNyx", () => {
   it("starts idle, with no activity end time", () => {
     const pet = createNyx(1000)
     expect(pet.activity).toBe("idle")
