@@ -6,7 +6,8 @@
     "core",
     "tools",
     "shared",
-    "server"
+    "server",
+    "screen"
   ],
   "scripts": {
     "test": "vitest",

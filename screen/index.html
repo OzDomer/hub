@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nyx</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 1.5rem;
+        background: #05060a;
+        color: #dfe6ff;
+        font-family: system-ui, sans-serif;
+      }
+      #connection { opacity: 0.6; }
+      #status { font-size: 1.25rem; line-height: 1.6; }
+      button {
+        background: #141a2e;
+        color: #dfe6ff;
+        border: 1px solid #2a3458;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <p id="connection">connecting...</p>
+    <pre id="status"></pre>
+    <nav id="actions">
+      <button data-action="feed">feed</button>
+      <button data-action="play">play</button>
+      <button data-action="pet">pet</button>
+      <button data-action="wake">wake</button>
+    </nav>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
