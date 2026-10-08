@@ -255,6 +255,7 @@ Each one ends with something visibly working, and a commit.
 - `core`: state, rules, actions, injected clock.
 - Tests that fast-forward time ("8 hours alone -> hungry, low mood").
 - **Done when:** the tests pass, and a CLI script prints the pet's state over a simulated day.
+- **Status: done (Oct 2026).** core: state, config, tick (whole steps, call-rhythm independent), actions (eating blocks, wake grace), derived mood. tools: one-day simulation CLI.
 
 ### M2: The pet on a screen (laptop browser)
 - `server`: the hub process, with the pet as its first resident: ticks it, persists it, WebSocket transport with topics.
@@ -345,5 +346,6 @@ What to expect and how to keep it usable:
 - Kiosk on Pi OS Lite: which minimal compositor (e.g. cage or labwc), and one Chromium window per HDMI output.
 - The projector cable length from the Pi to the stand.
 - Public or private repo (sprite tool terms; secrets stay out either way).
+- Exact stat rates (tune by feel in M2). First simulation: grumpy for long stretches (the 20-30 energy band before every sleep, plus hunger), several naps per day, and the wake/sleep cycle doesn't line up with a real day.
 
 Resolved: **Docker or plain systemd on the Pi** -> the hub runs in Docker (athena is Compose-based); the kiosk runs on the host.
