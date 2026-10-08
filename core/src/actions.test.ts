@@ -49,7 +49,7 @@ describe("applyAction", () => {
     ).toBe("sleeping")
   })
 
-    it("an expired meal doesn't block actions, even before the next tick", () => {
+  it("an expired meal doesn't block actions, even before the next tick", () => {
     const ate = { ...createNyx(T0), activity: "eating" as const, activityEndsAt: T0 + 30_000 }
     expect(applyAction(ate, "play", T0 + 45_000).activity).toBe("playing")
   })
