@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hub/core": "*",
+    "@hub/shared": "^0.0.0",
     "ws": "^8.22.0"
   },
   "devDependencies": {
