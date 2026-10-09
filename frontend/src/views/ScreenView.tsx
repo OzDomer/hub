@@ -29,6 +29,7 @@ export function ScreenView({ room, fps }: ScreenViewProps) {
       <NyxCanvas
         view={view}
         glow={room.glow}
+        opaque={room.opaque}
         onFrame={countFrame}
         onResize={fps ? setCanvasSize : undefined}
       />

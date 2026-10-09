@@ -61,4 +61,10 @@ describe("parsePage", () => {
   it("gives Selene a brighter glow than Helios", () => {
     expect(ROOMS.selene.glow).toBeGreaterThan(ROOMS.helios.glow)
   })
+
+  it("makes the big screens opaque and keeps dev transparent", () => {
+    expect(ROOMS.helios.opaque).toBe(true)
+    expect(ROOMS.selene.opaque).toBe(true)
+    expect(ROOMS.dev.opaque).toBe(false)
+  })
 })

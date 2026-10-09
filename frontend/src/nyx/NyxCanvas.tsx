@@ -12,11 +12,12 @@ export interface CanvasSize {
 interface NyxCanvasProps {
   view: NyxView | null
   glow: number
+  opaque: boolean
   onFrame?: (time: number) => void
   onResize?: (size: CanvasSize) => void
 }
 
-export function NyxCanvas({ view, glow, onFrame, onResize }: NyxCanvasProps) {
+export function NyxCanvas({ view, glow, opaque, onFrame, onResize }: NyxCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const viewRef = useRef(view)
   const onFrameRef = useRef(onFrame)
@@ -31,7 +32,7 @@ export function NyxCanvas({ view, glow, onFrame, onResize }: NyxCanvasProps) {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    const ctx = canvas.getContext("2d")
+    const ctx = canvas.getContext("2d", { alpha: !opaque })
     if (!ctx) throw new Error("this browser has no 2d canvas")
     const theme = readTheme()
 
@@ -58,7 +59,7 @@ export function NyxCanvas({ view, glow, onFrame, onResize }: NyxCanvasProps) {
       cancelAnimationFrame(frameId)
       observer.disconnect()
     }
-  }, [glow])
+  }, [glow, opaque])
 
-  return <canvas ref={canvasRef} className="nyx-canvas" />
+  return <canvas key={opaque ? "opaque" : "alpha"} ref={canvasRef} className="nyx-canvas" />
 }

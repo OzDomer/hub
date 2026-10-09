@@ -1,12 +1,13 @@
 export interface RoomPreset {
   id: string
   glow: number
+  opaque: boolean
 }
 
 export const ROOMS = {
-  dev: { id: "dev", glow: 1 },
-  helios: { id: "helios", glow: 1 },
-  selene: { id: "selene", glow: 1.3 },
+  dev: { id: "dev", glow: 1, opaque: false },
+  helios: { id: "helios", glow: 1, opaque: true },
+  selene: { id: "selene", glow: 1.3, opaque: true },
 } as const satisfies Record<string, RoomPreset>
 
 export type RoomId = keyof typeof ROOMS
