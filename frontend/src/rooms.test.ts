@@ -67,4 +67,12 @@ describe("parsePage", () => {
     expect(ROOMS.selene.opaque).toBe(true)
     expect(ROOMS.dev.opaque).toBe(false)
   })
+
+  it("keeps every resolution in (0, 1] and renders Selene below full", () => {
+    for (const preset of Object.values(ROOMS)) {
+      expect(preset.resolution).toBeGreaterThan(0)
+      expect(preset.resolution).toBeLessThanOrEqual(1)
+    }
+    expect(ROOMS.selene.resolution).toBeLessThan(1)
+  })
 })

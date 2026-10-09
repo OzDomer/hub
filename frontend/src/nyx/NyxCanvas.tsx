@@ -13,11 +13,12 @@ interface NyxCanvasProps {
   view: NyxView | null
   glow: number
   opaque: boolean
+  resolution: number
   onFrame?: (time: number) => void
   onResize?: (size: CanvasSize) => void
 }
 
-export function NyxCanvas({ view, glow, opaque, onFrame, onResize }: NyxCanvasProps) {
+export function NyxCanvas({ view, glow, opaque, resolution, onFrame, onResize }: NyxCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const viewRef = useRef(view)
   const onFrameRef = useRef(onFrame)
@@ -39,7 +40,7 @@ export function NyxCanvas({ view, glow, opaque, onFrame, onResize }: NyxCanvasPr
     let width = 0
     let height = 0
     const observer = new ResizeObserver(() => {
-      const ratio = window.devicePixelRatio || 1
+      const ratio = (window.devicePixelRatio || 1) * resolution
       width = canvas.clientWidth
       height = canvas.clientHeight
       canvas.width = Math.round(width * ratio)
@@ -59,7 +60,7 @@ export function NyxCanvas({ view, glow, opaque, onFrame, onResize }: NyxCanvasPr
       cancelAnimationFrame(frameId)
       observer.disconnect()
     }
-  }, [glow, opaque])
+  }, [glow, opaque, resolution])
 
   return <canvas key={opaque ? "opaque" : "alpha"} ref={canvasRef} className="nyx-canvas" />
 }

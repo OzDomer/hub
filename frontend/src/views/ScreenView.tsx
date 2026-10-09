@@ -30,6 +30,7 @@ export function ScreenView({ room, fps }: ScreenViewProps) {
         view={view}
         glow={room.glow}
         opaque={room.opaque}
+        resolution={room.resolution}
         onFrame={countFrame}
         onResize={fps ? setCanvasSize : undefined}
       />
