@@ -1,10 +1,16 @@
 import { useEffect, useRef } from "react"
+import type { Activity } from "@hub/core/nyx"
+import type { Mood } from "@hub/core/mood"
 import { readTheme } from "../theme"
 import { dayPhase } from "./dayPhase"
 import { drawFrame } from "./draw"
-import type { NyxView } from "./draw"
-import { loadNyxStills } from "./nyxArt"
-import type { NyxStills } from "./nyxArt"
+import { browserNyxArt, nyxManifest } from "./nyxArt"
+import { clipFor, eyeVariantFor } from "./sprites"
+
+export interface NyxView {
+  activity: Activity
+  mood: Mood
+}
 
 export interface CanvasSize {
   width: number
@@ -38,15 +44,7 @@ export function NyxCanvas({ view, opaque, resolution, onFrame, onResize }: NyxCa
     const ctx = canvas.getContext("2d", { alpha: !opaque })
     if (!ctx) throw new Error("this browser has no 2d canvas")
     const theme = readTheme()
-
-    let art: NyxStills | null = null
-    let stopped = false
-    loadNyxStills().then(
-      (loaded) => {
-        if (!stopped) art = loaded
-      },
-      (error: unknown) => console.error("could not load Nyx's art", error),
-    )
+    const art = browserNyxArt()
 
     let width = 0
     let height = 0
@@ -63,15 +61,21 @@ export function NyxCanvas({ view, opaque, resolution, onFrame, onResize }: NyxCa
 
     let frameId = requestAnimationFrame(function frame(time) {
       onFrameRef.current?.(time)
-      const image = art ? art[dayPhase(new Date())] : null
-      drawFrame(ctx, width, height, viewRef.current, time, theme, image)
+      const view = viewRef.current
+      let shown = null
+      if (view !== null) {
+        const clip = clipFor(view.activity)
+        const eyes = eyeVariantFor(nyxManifest, clip, view.mood, dayPhase(new Date()))
+        shown = art.pick(clip, eyes, time)
+      }
+      drawFrame(ctx, width, height, nyxManifest, shown, time / 1000, theme)
       frameId = requestAnimationFrame(frame)
     })
 
     return () => {
-      stopped = true
       cancelAnimationFrame(frameId)
       observer.disconnect()
+      art.dispose()
     }
   }, [opaque, resolution])
 

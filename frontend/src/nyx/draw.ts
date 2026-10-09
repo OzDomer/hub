@@ -1,73 +1,75 @@
-import type { Activity } from "@hub/core/nyx"
-import type { Mood } from "@hub/core/mood"
 import type { Theme } from "../theme"
+import type { ShownArt } from "./nyxArt"
+import { cellRect, frameAt } from "./sprites"
+import type { NyxManifest, Rect } from "./sprites"
 
-export interface NyxView {
-  activity: Activity
-  mood: Mood
-}
-
+// how tall she is, as a fraction of the canvas height, and where she stands
 const FIGURE_HEIGHT = 0.45
 const FLOOR = 0.92
-const SLEEPING_ALPHA = 0.45
-// beside her head, as fractions of the art (measured from nyxDay/nyxNight.png)
-const ZS_AT = { x: 0.85, y: 0.22 }
 
+// All her motion is in the frames (docs/nyxArtPipeline.md); this only places
+// them. Frame index and next are crossfaded, so 12 fps reads as smooth.
 export function drawFrame(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  view: NyxView | null,
-  time: number,
+  manifest: NyxManifest,
+  art: ShownArt<CanvasImageSource> | null,
+  seconds: number,
   theme: Theme,
-  image: HTMLImageElement | null,
 ): void {
   ctx.fillStyle = theme.background
   ctx.fillRect(0, 0, width, height)
-  if (view === null || image === null) return
+  if (art === null) return
 
-  const restingHeight = height * FIGURE_HEIGHT
-  const figureHeight = restingHeight * bounce(view.activity, time)
-  const figureWidth = figureHeight * (image.naturalWidth / image.naturalHeight)
-  const x = (width - figureWidth) / 2
-  const y = height * FLOOR - figureHeight - bob(view.activity, time) * restingHeight
+  const clip = manifest.clips[art.clip]
+  const frame = frameAt(clip.frames, manifest.fps, seconds)
+  const blend = manifest.crossfade ? frame.blend : 0
 
-  const sleeping = view.activity === "sleeping"
-  if (sleeping) ctx.globalAlpha = SLEEPING_ALPHA
-  ctx.drawImage(image, x, y, figureWidth, figureHeight)
-  ctx.globalAlpha = 1
+  const scale = (height * FIGURE_HEIGHT) / manifest.frameHeight
+  const figure = {
+    x: (width - manifest.frameWidth * scale) / 2,
+    y: height * FLOOR - manifest.frameHeight * scale,
+    width: manifest.frameWidth * scale,
+    height: manifest.frameHeight * scale,
+  }
 
-  if (sleeping) {
-    drawZs(ctx, x + figureWidth * ZS_AT.x, y + figureHeight * ZS_AT.y, restingHeight * 0.3, time, theme)
+  // rendered illustrations, not pixel art (resizing the canvas resets this)
+  ctx.imageSmoothingEnabled = true
+
+  drawCrossfaded(ctx, art.body, manifest.columns, manifest.frameWidth, manifest.frameHeight, frame.index, frame.next, blend, figure)
+
+  if (art.eyes !== null) {
+    const { sheet, image } = art.eyes
+    const eyes = {
+      x: figure.x + sheet.x * scale,
+      y: figure.y + sheet.y * scale,
+      width: sheet.width * scale,
+      height: sheet.height * scale,
+    }
+    drawCrossfaded(ctx, image, manifest.columns, sheet.width, sheet.height, frame.index, frame.next, blend, eyes)
   }
 }
 
-function bob(activity: Activity, time: number): number {
-  if (activity === "sleeping") return Math.sin(time / 1600) * 0.01
-  return Math.sin(time / 900) * 0.03
-}
-
-function bounce(activity: Activity, time: number): number {
-  if (activity === "eating" || activity === "playing") {
-    return 1 + Math.abs(Math.sin(time / 150)) * 0.04
-  }
-  return 1
-}
-
-function drawZs(
+function drawCrossfaded(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  size: number,
-  time: number,
-  theme: Theme,
+  image: CanvasImageSource,
+  columns: number,
+  cellWidth: number,
+  cellHeight: number,
+  index: number,
+  next: number,
+  blend: number,
+  to: Rect,
 ): void {
-  ctx.fillStyle = theme.text
-  for (let i = 0; i < 3; i++) {
-    const t = (time / 2500 + i / 3) % 1
-    ctx.globalAlpha = 1 - t
-    ctx.font = `${size * (0.3 + t * 0.3)}px system-ui`
-    ctx.fillText("z", x + t * size * 0.6, y - t * size * 1.5)
+  drawCell(ctx, image, cellRect(index, columns, cellWidth, cellHeight), to)
+  if (blend > 0) {
+    ctx.globalAlpha = blend
+    drawCell(ctx, image, cellRect(next, columns, cellWidth, cellHeight), to)
+    ctx.globalAlpha = 1
   }
-  ctx.globalAlpha = 1
+}
+
+function drawCell(ctx: CanvasRenderingContext2D, image: CanvasImageSource, from: Rect, to: Rect): void {
+  ctx.drawImage(image, from.x, from.y, from.width, from.height, to.x, to.y, to.width, to.height)
 }

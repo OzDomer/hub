@@ -1,7 +1,4 @@
 import manifestJson from "../assets/nyx/nyx.json"
-import nyxDayUrl from "../assets/nyxDay.png"
-import nyxNightUrl from "../assets/nyxNight.png"
-import type { DayPhase } from "./dayPhase"
 import type { ClipName, EyeSheet, NyxManifest } from "./sprites"
 
 export const nyxManifest: NyxManifest = manifestJson
@@ -152,20 +149,4 @@ export function browserNyxArt(): NyxArt<ImageBitmap> {
     release: (bitmap) => bitmap.close(),
     onError: (sheet, error) => console.error(`could not load ${sheet}`, error),
   })
-}
-
-// The old still images, until draw.ts plays the sheets (removed with them)
-
-export type NyxStills = Record<DayPhase, HTMLImageElement>
-
-async function loadImage(url: string): Promise<HTMLImageElement> {
-  const image = new Image()
-  image.src = url
-  await image.decode()
-  return image
-}
-
-export async function loadNyxStills(): Promise<NyxStills> {
-  const [day, night] = await Promise.all([loadImage(nyxDayUrl), loadImage(nyxNightUrl)])
-  return { day, night }
 }

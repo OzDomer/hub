@@ -3,8 +3,7 @@ import { createFpsMeter } from "../debug/fpsMeter"
 import { statusText } from "../hub/connection"
 import { useHub } from "../hub/useHub"
 import { NyxCanvas } from "../nyx/NyxCanvas"
-import type { CanvasSize } from "../nyx/NyxCanvas"
-import type { NyxView } from "../nyx/draw"
+import type { CanvasSize, NyxView } from "../nyx/NyxCanvas"
 import type { RoomPreset } from "../rooms"
 
 interface ScreenViewProps {

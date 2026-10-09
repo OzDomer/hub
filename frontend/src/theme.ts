@@ -1,6 +1,5 @@
 export interface Theme {
   background: string
-  text: string
 }
 
 export function readTheme(): Theme {
@@ -14,6 +13,5 @@ export function readTheme(): Theme {
 
   return {
     background: read("--background"),
-    text: read("--text"),
   }
 }
