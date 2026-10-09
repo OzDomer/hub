@@ -3,21 +3,30 @@ import { readTheme } from "../theme"
 import { drawFrame } from "./draw"
 import type { NyxView } from "./draw"
 
+export interface CanvasSize {
+  width: number
+  height: number
+  ratio: number
+}
+
 interface NyxCanvasProps {
   view: NyxView | null
   glow: number
   onFrame?: (time: number) => void
+  onResize?: (size: CanvasSize) => void
 }
 
-export function NyxCanvas({ view, glow, onFrame }: NyxCanvasProps) {
+export function NyxCanvas({ view, glow, onFrame, onResize }: NyxCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const viewRef = useRef(view)
   const onFrameRef = useRef(onFrame)
+  const onResizeRef = useRef(onResize)
 
   useEffect(() => {
     viewRef.current = view
     onFrameRef.current = onFrame
-  }, [view, onFrame])
+    onResizeRef.current = onResize
+  }, [view, onFrame, onResize])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -35,6 +44,7 @@ export function NyxCanvas({ view, glow, onFrame }: NyxCanvasProps) {
       canvas.width = Math.round(width * ratio)
       canvas.height = Math.round(height * ratio)
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
+      onResizeRef.current?.({ width: canvas.width, height: canvas.height, ratio })
     })
     observer.observe(canvas)
 
