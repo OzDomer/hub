@@ -262,22 +262,24 @@ hub/
       theme.ts         reads the CSS palette for the canvas
       styles.css       the palette (CSS variables) + all styles
       hub/             connection.ts (WebSocket + reconnect), useHub.ts (the React hook)
-      nyx/             draw.ts (pure canvas drawing), NyxCanvas.tsx
+      nyx/             sprites.ts (pure frame/clip/eye picking), nyxArt.ts (sheet loading + cache),
+                       draw.ts (pure canvas drawing), NyxCanvas.tsx, dayPhase.ts, preview.ts
+      assets/nyx/      the packed sprite sheets + nyx.json (docs/nyxArtPipeline.md)
       debug/           fpsMeter.ts
       views/           ScreenView.tsx, RemoteView.tsx
   hud/         HUD widgets the screen views mount
   desktop/     Electron transparent overlay for the laptop monitors; loads frontend/ (later)
   stick/       ESP32 firmware (PlatformIO + M5Unified)
   tools/       fake stick, fake screens, simulators, asset helpers
-  assets/      sprites (see section 7)
-  docs/adr/    decisions that outgrow this file
+  assets/      source art: the concept sheet and the rigged model (section 7)
+  docs/        nyxArtPipeline.md; adr/ for decisions that outgrow this file
   hub.code-workspace
 ```
 
 - The server package is `server/`, not `hub/`, to avoid `hub/hub/`.
 - **Open `hub.code-workspace` in VS Code, not the folder.** PlatformIO only activates when `platformio.ini` sits at the root of a workspace folder, so `stick/` is its own workspace folder alongside the repo root.
 - Packages are added when their milestone starts; empty folders aren't committed.
-- **frontend URLs:** `/?room=<id>` is a screen (`dev`, `helios`, `selene`; default `dev`), `&fps` adds a debug overlay; `/?view=remote` is the remote. An unknown room is an on-screen error, never a silent fallback.
+- **frontend URLs:** `/?room=<id>` is a screen (`dev`, `helios`, `selene`; default `dev`), `&fps` adds a debug overlay; `/?view=remote` is the remote. An unknown room is an on-screen error, never a silent fallback. In development only (`vite dev`), `&activity=`, `&mood=` and `&phase=day|night` force what a screen shows, with or without a hub (`nyx/preview.ts`); production builds ignore them.
 
 Tests: **Vitest** for `core`, `world`, `shared`, and `server`. The server is tested against a **fake stick**, **fake screens** and a **fake clock**, like the fake lamp.
 
@@ -357,6 +359,7 @@ The M2 `screen/` page was a working proof of concept: one `main.ts` with all the
 - Add the hub's state volume to `athena-backup`.
 - Kiosk on the host: Chromium fullscreen on the HDMI output to the TV, loading the frontend at `?room=helios`. The kiosk only drives the TV.
 - Selene: the hub launches our Cast receiver on the projector by IP and re-casts when the room drops (D12). Needs the page on HTTPS under a name the projector can resolve (section 8).
+- **Selene's background apps** cost ~15 fps when they come back (Netflix re-enabled itself once, section 7). Under Cast nobody watches the overlay, so find out what re-enables it, or check Selene's fps after updates.
 - **Measure the fps on the real setups** with `?fps`: Selene under the Cast receiver (full 1920x1080, ~22% more pixels than the browser app; tune `ROOMS.selene.resolution` if it drops below ~57) and Helios on the Pi's Chromium (`ROOMS.helios.resolution` is 1 until measured). Lesson from M2.5: on weak GPUs the cost is pixels per frame.
 - HDMI-CEC: the TV turns on when the pet wakes, and off at night.
 - **Done when:** unplug athena, plug it back in, and the pet is back on Helios and Selene without touching anything, with its state intact.
@@ -366,6 +369,7 @@ The M2 `screen/` page was a working proof of concept: one `main.ts` with all the
 - Clock sync between screens and the hub.
 - The pet walks between Helios, Selene and a laptop browser window (walking, including its animation, moved here from M2).
 - **Done when:** the pet walks across screens, survives a screen turning off mid-walk, and looks consistent on every screen.
+- **Later, not planned:** the walk needs new art, since the current model is rigged sitting (docs/nyxArtPipeline.md, section 13). One option is the "drift": she glides between screens with her tail streaming behind her, which the current model could do. Animation work, decided when M5 starts.
 
 ### M6: The real stick
 - Firmware: WiFi + WebSocket client, the pet on the tiny screen, buttons for actions.
@@ -380,6 +384,7 @@ The M2 `screen/` page was a working proof of concept: one `main.ts` with all the
 - **DualShock:** play with the pet on the TV (Gamepad API in the kiosk; pair the DS4 with the Pi).
 - **Claps:** the clap detector wakes the pet up (likely a separate worker, D9).
 - **The laptop overlay** (Electron, transparent, click-through, across the 3 monitors): the pet walks on the actual desktop.
+- **Much later, maybe:** Nyx's goddess "true form" on Selene, a transformation. Animation work, not planned.
 
 ### Parallel: the stick spike (alongside M1-M4)
 Small firmware experiments that teach C++ and answer open questions, without building M6 early:
@@ -405,23 +410,58 @@ Small firmware experiments that teach C++ and answer open questions, without bui
 
 ---
 
-## 7. Assets (sprites)
+## 7. Assets: art per device
 
-Plan: generate a base character with an image model (ChatGPT / Gemini), then clean it up by hand.
+### Nyx's look
 
-What to expect and how to keep it usable:
-- **Image models are bad at consistent animation frames.** The character drifts between frames. So generate the **character design** and maybe a few key poses, then draw or fix the animation frames by hand in **Piskel** (free, browser) or **Aseprite**.
-- **Pick a fixed grid first:** e.g. 32x32 or 48x48 per frame. Everything snaps to it.
-- **Transparent background, a limited palette,** and nearest-neighbor scaling (no blur) when drawing on canvas.
-- **One sprite sheet per activity** (idle, walk, sleep, eat, play, jump/leave), with frame size and count recorded in a small JSON next to it. **Mood is a variant, not an animation:** start with a different face per mood layered on top, so you don't draw every activity x mood combination.
-- The stick's screen is 240x135: check early (stick spike) that the sprite still reads at that size.
-- Check the image tool's terms on using its output in a public repo.
+Settled (Oct 2026) in ChatGPT image generation: a dark cat made of night sky, with a nebula chest and tail, stars, a thin light outline, a crown of three gold sparkles, and a tail tip dissolving into stardust. Glowing eyes by day; warm cream pupils by night. The reference is `assets/source/nyxConceptDayNight.png` (day and night, plus face close-ups for four moods).
+
+**Provenance:** the concept art came from ChatGPT and the 3D model from Tripo on a paid plan. Under both services' terms the output is ours to use; it must not be presented as hand-drawn.
+
+### Screens (Helios, Selene, the laptop): rendered clips
+
+The original plan here (hand-drawn pixel-art frames) was replaced: the concept was turned into a rigged 3D model, and Blender scripts render it to animated sprite sheets. The whole pipeline, from concept to `nyx.json`, is in **[docs/nyxArtPipeline.md](docs/nyxArtPipeline.md)**.
+
+- **Clips:** idle, sleep, eat, play (12 fps, looping, 4-8 s), picked by activity. The eyes are a separate layer: idle shows the mood (four eye states), the other clips have one state each, all in day and night versions. Mood is still a variant, not an animation.
+- **Playing them** (`frontend/src/nyx/`): frame `i = floor(seconds * fps) % frames`, crossfaded into `i + 1` (12 fps reads as 24), eyes drawn over the body at their offset. She's 45% of the canvas height, standing at 92%. All her motion is in the frames; the code animates nothing on top.
+- **Memory:** a sheet costs width x height x 4 bytes once decoded, whatever its file size: ~92 MB for an 8 s body sheet (5436x4248), ~46 MB for 4 s, ~3 MB per eye sheet. All of them at once would be ~300 MB on Selene's 2 GB. So sheets are loaded **on demand, per sheet**: idle's body always, plus the current clip's body and current eye variant; anything else is released after 60 s unused. A new clip shows only once its body and eyes are decoded; until then the previous one stays, so she never vanishes. Steady state: 140-190 MB.
+- **`ImageBitmap`, not `<img>`:** a bitmap stays decoded until `close()` (an `<img>` can be dropped by the browser and decoded again on the next draw, a hitch for a 92 MB sheet), and `close()` frees the memory at once instead of at the next garbage collection.
+- **Texture size is fine:** Selene's GPU (Mali-G52, section 6) draws the 5436 px wide sheets at 60 fps.
+- **Watch item, memory:** whether the GPU keeps its own copy of each drawn sheet is unknown (it would roughly double the numbers above). Nothing to do unless it shows; the symptom would be the page reloading itself, or stutters after clip switches.
+- **Dev switches for measuring** (dev server only): `&noart` (nothing loaded), `&nonyx` (loaded, not drawn), `&nocrossfade`, `&noeyes`. The fps overlay names the ones that are off.
+
+**Selene fps with the sprites (Oct 2026)**, `?room=selene&fps`, dev server, projector browser app:
+
+| Change | fps |
+|---|---|
+| everything drawn | 45 |
+| `&nonyx` | 45-60, unstable |
+| `&nocrossfade` | 52-60, unstable |
+| `&noeyes` | 45-47 |
+| `&noart` | 60 |
+| **control:** the orb (commit `7afce58`, 60 in M2.5) | **43-45** |
+| after force-stopping the browser, disabling Netflix (it had come back) and clearing app data: the orb | 60 |
+| same clean state: everything drawn, idle | **60** |
+| same clean state: everything drawn, sleep (`&activity=sleeping`) | **60** |
+
+- **The control is what settled it.** Without re-measuring the orb, the 45 looked like a sprite regression, and the first suspects were the crossfade and the sheet size. The orb at 43-45 showed that Selene itself was slow that day; `&noart` reached 60 only because it draws almost nothing.
+- **Three things changed at once in the fix**, so which one mattered isn't known. Suspect: Netflix, which had been disabled before and came back.
+- **The crossfade has a cost** (52-60 without it, under the slow conditions); it fits within 60 on a clean Selene. If fps drops later, it's the first knob: a per-room preset like `resolution`.
+- **Lesson:** before blaming a change, re-measure a known-good control on the same device the same day.
+
+### The stick: a 48x48 pixel sprite
+
+The stick is not part of the render pipeline. Its screen is 240x135, so it keeps the original plan:
+- **A fixed grid** (48x48 per frame), transparent background, a limited palette, nearest-neighbor scaling (no blur).
+- **One sprite sheet per activity**, frame size and count in a small JSON next to it; a face per mood layered on top.
+- Image models are bad at consistent animation frames, so frames are drawn or fixed by hand (Piskel or Aseprite), from the concept sheet.
+- Check early (stick spike) that she still reads at that size.
 
 ---
 
 ## 8. Open questions
 
-- The pet's look. Name resolved: **Nyx** (goddess of night; Greek naming alongside athena). **to be decided if** night is a design theme, not just a name: sleep is her element (possibly more active after dark), dark palette with a glow, a moon as the mood indicator, the lamp as her night-light. Decide specifics in M2.
+- Night as a theme beyond the look (Nyx, goddess of night): is sleep her element, is she more active after dark, is the lamp her night-light? Her look is settled (section 7).
 - The stick's offline rules: how simple can they be and still feel right?
 - What the flick gesture is exactly (a sharp acceleration spike past a threshold? a direction?). Tune with real IMU data from the stick spike's logger: record, look at the numbers, then set thresholds.
 - World details (D10): edge vs door rules, how the pet picks where to go, how far off the clock sync can be before it looks wrong.
