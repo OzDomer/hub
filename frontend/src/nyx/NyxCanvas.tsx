@@ -3,8 +3,8 @@ import { readTheme } from "../theme"
 import { dayPhase } from "./dayPhase"
 import { drawFrame } from "./draw"
 import type { NyxView } from "./draw"
-import { loadNyxArt } from "./nyxArt"
-import type { NyxArt } from "./nyxArt"
+import { loadNyxStills } from "./nyxArt"
+import type { NyxStills } from "./nyxArt"
 
 export interface CanvasSize {
   width: number
@@ -39,9 +39,9 @@ export function NyxCanvas({ view, opaque, resolution, onFrame, onResize }: NyxCa
     if (!ctx) throw new Error("this browser has no 2d canvas")
     const theme = readTheme()
 
-    let art: NyxArt | null = null
+    let art: NyxStills | null = null
     let stopped = false
-    loadNyxArt().then(
+    loadNyxStills().then(
       (loaded) => {
         if (!stopped) art = loaded
       },
