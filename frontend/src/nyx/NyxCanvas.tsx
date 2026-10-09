@@ -1,7 +1,10 @@
 import { useEffect, useRef } from "react"
 import { readTheme } from "../theme"
+import { dayPhase } from "./dayPhase"
 import { drawFrame } from "./draw"
 import type { NyxView } from "./draw"
+import { loadNyxArt } from "./nyxArt"
+import type { NyxArt } from "./nyxArt"
 
 export interface CanvasSize {
   width: number
@@ -11,14 +14,13 @@ export interface CanvasSize {
 
 interface NyxCanvasProps {
   view: NyxView | null
-  glow: number
   opaque: boolean
   resolution: number
   onFrame?: (time: number) => void
   onResize?: (size: CanvasSize) => void
 }
 
-export function NyxCanvas({ view, glow, opaque, resolution, onFrame, onResize }: NyxCanvasProps) {
+export function NyxCanvas({ view, opaque, resolution, onFrame, onResize }: NyxCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const viewRef = useRef(view)
   const onFrameRef = useRef(onFrame)
@@ -37,6 +39,15 @@ export function NyxCanvas({ view, glow, opaque, resolution, onFrame, onResize }:
     if (!ctx) throw new Error("this browser has no 2d canvas")
     const theme = readTheme()
 
+    let art: NyxArt | null = null
+    let stopped = false
+    loadNyxArt().then(
+      (loaded) => {
+        if (!stopped) art = loaded
+      },
+      (error: unknown) => console.error("could not load Nyx's art", error),
+    )
+
     let width = 0
     let height = 0
     const observer = new ResizeObserver(() => {
@@ -52,15 +63,17 @@ export function NyxCanvas({ view, glow, opaque, resolution, onFrame, onResize }:
 
     let frameId = requestAnimationFrame(function frame(time) {
       onFrameRef.current?.(time)
-      drawFrame(ctx, width, height, viewRef.current, time, theme, glow)
+      const image = art ? art[dayPhase(new Date())] : null
+      drawFrame(ctx, width, height, viewRef.current, time, theme, image)
       frameId = requestAnimationFrame(frame)
     })
 
     return () => {
+      stopped = true
       cancelAnimationFrame(frameId)
       observer.disconnect()
     }
-  }, [glow, opaque, resolution])
+  }, [opaque, resolution])
 
   return <canvas key={opaque ? "opaque" : "alpha"} ref={canvasRef} className="nyx-canvas" />
 }

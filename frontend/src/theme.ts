@@ -1,10 +1,6 @@
 export interface Theme {
   background: string
   text: string
-  glow: string
-  core: string
-  moon: string
-  moonGrumpy: string
 }
 
 export function readTheme(): Theme {
@@ -19,9 +15,5 @@ export function readTheme(): Theme {
   return {
     background: read("--background"),
     text: read("--text"),
-    glow: read("--glow"),
-    core: read("--core"),
-    moon: read("--moon"),
-    moonGrumpy: read("--moon-grumpy"),
   }
 }

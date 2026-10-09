@@ -7,12 +7,11 @@ export interface NyxView {
   mood: Mood
 }
 
-const MOON_SHADOW: Record<Mood, number> = {
-  happy: 0,
-  content: 0.35,
-  sad: 0.75,
-  grumpy: 0.75,
-}
+const FIGURE_HEIGHT = 0.45
+const FLOOR = 0.92
+const SLEEPING_ALPHA = 0.45
+// beside her head, as fractions of the art (measured from nyxDay/nyxNight.png)
+const ZS_AT = { x: 0.85, y: 0.22 }
 
 export function drawFrame(
   ctx: CanvasRenderingContext2D,
@@ -21,78 +20,38 @@ export function drawFrame(
   view: NyxView | null,
   time: number,
   theme: Theme,
-  glow: number,
+  image: HTMLImageElement | null,
 ): void {
   ctx.fillStyle = theme.background
   ctx.fillRect(0, 0, width, height)
-  if (view === null) return
+  if (view === null || image === null) return
 
-  const radius = Math.min(width, height) * 0.12
-  const x = width / 2
-  const y = height / 2 + bob(view.activity, time) * radius
-  const brightness = view.activity === "sleeping" ? 0.45 : 1
+  const restingHeight = height * FIGURE_HEIGHT
+  const figureHeight = restingHeight * bounce(view.activity, time)
+  const figureWidth = figureHeight * (image.naturalWidth / image.naturalHeight)
+  const x = (width - figureWidth) / 2
+  const y = height * FLOOR - figureHeight - bob(view.activity, time) * restingHeight
 
-  drawOrb(ctx, x, y, radius * pulse(view.activity, time), brightness, glow, theme)
-  drawMoon(ctx, x, y - radius * 3.2, radius * 0.45, view.mood, theme)
-  if (view.activity === "sleeping") drawZs(ctx, x + radius, y - radius, radius, time, theme)
+  const sleeping = view.activity === "sleeping"
+  if (sleeping) ctx.globalAlpha = SLEEPING_ALPHA
+  ctx.drawImage(image, x, y, figureWidth, figureHeight)
+  ctx.globalAlpha = 1
+
+  if (sleeping) {
+    drawZs(ctx, x + figureWidth * ZS_AT.x, y + figureHeight * ZS_AT.y, restingHeight * 0.3, time, theme)
+  }
 }
 
 function bob(activity: Activity, time: number): number {
-  if (activity === "sleeping") return Math.sin(time / 1600) * 0.04
-  return Math.sin(time / 900) * 0.12
+  if (activity === "sleeping") return Math.sin(time / 1600) * 0.01
+  return Math.sin(time / 900) * 0.03
 }
 
-function pulse(activity: Activity, time: number): number {
+function bounce(activity: Activity, time: number): number {
   if (activity === "eating" || activity === "playing") {
-    return 1 + Math.sin(time / 120) * 0.06
+    return 1 + Math.abs(Math.sin(time / 150)) * 0.04
   }
   return 1
-}
-
-function drawOrb(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  radius: number,
-  brightness: number,
-  glow: number,
-  theme: Theme,
-): void {
-  const halo = ctx.createRadialGradient(x, y, 0, x, y, radius * 2.5)
-  halo.addColorStop(0, `rgb(${theme.glow} / ${Math.min(1, 0.9 * brightness * glow)})`)
-  halo.addColorStop(0.35, `rgb(${theme.glow} / ${Math.min(1, 0.35 * brightness * glow)})`)
-  halo.addColorStop(1, `rgb(${theme.glow} / 0)`)
-  ctx.fillStyle = halo
-  ctx.beginPath()
-  ctx.arc(x, y, radius * 2.5, 0, Math.PI * 2)
-  ctx.fill()
-
-  ctx.fillStyle = `rgb(${theme.core} / ${brightness})`
-  ctx.beginPath()
-  ctx.arc(x, y, radius, 0, Math.PI * 2)
-  ctx.fill()
-}
-
-function drawMoon(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  radius: number,
-  mood: Mood,
-  theme: Theme,
-): void {
-  ctx.fillStyle = mood === "grumpy" ? theme.moonGrumpy : theme.moon
-  ctx.beginPath()
-  ctx.arc(x, y, radius, 0, Math.PI * 2)
-  ctx.fill()
-
-  const shadow = MOON_SHADOW[mood]
-  if (shadow === 0) return
-
-  ctx.fillStyle = theme.background
-  ctx.beginPath()
-  ctx.arc(x + 2 * radius * (1 - shadow), y, radius, 0, Math.PI * 2)
-  ctx.fill()
 }
 
 function drawZs(
