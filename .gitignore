@@ -19,3 +19,6 @@ data/
 .DS_Store
 Thumbs.db
 *.log
+
+# Blender renders and previews (docs/nyxArtPipeline.md)
+tools/blender/out/

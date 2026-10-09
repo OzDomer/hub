@@ -1,0 +1,124 @@
+{
+  "frameWidth": 453,
+  "frameHeight": 531,
+  "fps": 12,
+  "columns": 12,
+  "crossfade": true,
+  "clips": {
+    "eat": {
+      "frames": 48,
+      "sheet": "eat.webp",
+      "eyes": {
+        "content_day": {
+          "sheet": "eat_eyes_content_day.webp",
+          "x": 255,
+          "y": 213,
+          "width": 133,
+          "height": 77
+        },
+        "content_night": {
+          "sheet": "eat_eyes_content_night.webp",
+          "x": 255,
+          "y": 213,
+          "width": 133,
+          "height": 77
+        }
+      }
+    },
+    "idle": {
+      "frames": 96,
+      "sheet": "idle.webp",
+      "eyes": {
+        "calm_day": {
+          "sheet": "idle_eyes_calm_day.webp",
+          "x": 241,
+          "y": 188,
+          "width": 135,
+          "height": 55
+        },
+        "calm_night": {
+          "sheet": "idle_eyes_calm_night.webp",
+          "x": 241,
+          "y": 188,
+          "width": 135,
+          "height": 55
+        },
+        "grumpy_day": {
+          "sheet": "idle_eyes_grumpy_day.webp",
+          "x": 241,
+          "y": 188,
+          "width": 135,
+          "height": 55
+        },
+        "grumpy_night": {
+          "sheet": "idle_eyes_grumpy_night.webp",
+          "x": 241,
+          "y": 188,
+          "width": 135,
+          "height": 55
+        },
+        "happy_day": {
+          "sheet": "idle_eyes_happy_day.webp",
+          "x": 241,
+          "y": 188,
+          "width": 135,
+          "height": 55
+        },
+        "happy_night": {
+          "sheet": "idle_eyes_happy_night.webp",
+          "x": 241,
+          "y": 188,
+          "width": 135,
+          "height": 55
+        },
+        "sad_day": {
+          "sheet": "idle_eyes_sad_day.webp",
+          "x": 241,
+          "y": 188,
+          "width": 135,
+          "height": 55
+        },
+        "sad_night": {
+          "sheet": "idle_eyes_sad_night.webp",
+          "x": 241,
+          "y": 188,
+          "width": 135,
+          "height": 55
+        }
+      }
+    },
+    "play": {
+      "frames": 48,
+      "sheet": "play.webp",
+      "eyes": {
+        "happy_day": {
+          "sheet": "play_eyes_happy_day.webp",
+          "x": 234,
+          "y": 193,
+          "width": 155,
+          "height": 71
+        },
+        "happy_night": {
+          "sheet": "play_eyes_happy_night.webp",
+          "x": 234,
+          "y": 193,
+          "width": 155,
+          "height": 71
+        }
+      }
+    },
+    "sleep": {
+      "frames": 96,
+      "sheet": "sleep.webp",
+      "eyes": {
+        "closed_day": {
+          "sheet": "sleep_eyes_closed_day.webp",
+          "x": 256,
+          "y": 216,
+          "width": 130,
+          "height": 58
+        }
+      }
+    }
+  }
+}
