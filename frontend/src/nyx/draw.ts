@@ -1,4 +1,6 @@
 import type { Theme } from "../theme"
+import type { DrawSwitches } from "./preview"
+import { ALL_ON } from "./preview"
 import type { ShownArt } from "./nyxArt"
 import { cellRect, frameAt } from "./sprites"
 import type { NyxManifest, Rect } from "./sprites"
@@ -17,14 +19,15 @@ export function drawFrame(
   art: ShownArt<CanvasImageSource> | null,
   seconds: number,
   theme: Theme,
+  switches: DrawSwitches = ALL_ON,
 ): void {
   ctx.fillStyle = theme.background
   ctx.fillRect(0, 0, width, height)
-  if (art === null) return
+  if (art === null || !switches.nyx) return
 
   const clip = manifest.clips[art.clip]
   const frame = frameAt(clip.frames, manifest.fps, seconds)
-  const blend = manifest.crossfade ? frame.blend : 0
+  const blend = manifest.crossfade && switches.crossfade ? frame.blend : 0
 
   const scale = (height * FIGURE_HEIGHT) / manifest.frameHeight
   const figure = {
@@ -39,7 +42,7 @@ export function drawFrame(
 
   drawCrossfaded(ctx, art.body, manifest.columns, manifest.frameWidth, manifest.frameHeight, frame.index, frame.next, blend, figure)
 
-  if (art.eyes !== null) {
+  if (art.eyes !== null && switches.eyes) {
     const { sheet, image } = art.eyes
     const eyes = {
       x: figure.x + sheet.x * scale,

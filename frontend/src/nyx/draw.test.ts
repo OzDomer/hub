@@ -89,6 +89,17 @@ describe("drawFrame", () => {
     expect(calls.map((call) => call.from)).toEqual([[300, 200, 100, 200], [0, 0, 100, 200]])
   })
 
+  it("leaves parts out when their switch is off (measuring fps)", () => {
+    const draw = (switches: { nyx: boolean, crossfade: boolean, eyes: boolean }) => {
+      const { calls, asCanvas } = fakeContext()
+      drawFrame(asCanvas, 1000, 1000, manifest, withEyes, 0.625, theme, { art: true, ...switches })
+      return calls.map((call) => call.image)
+    }
+    expect(draw({ nyx: false, crossfade: true, eyes: true })).toEqual([])
+    expect(draw({ nyx: true, crossfade: false, eyes: true })).toEqual(["body", "eyes"])
+    expect(draw({ nyx: true, crossfade: true, eyes: false })).toEqual(["body", "body"])
+  })
+
   it("turns smoothing on", () => {
     const { ctx, asCanvas } = fakeContext()
     drawFrame(asCanvas, 1000, 1000, manifest, withEyes, 0, theme)
