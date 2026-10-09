@@ -318,11 +318,26 @@ The M2 `screen/` page was a working proof of concept: one `main.ts` with all the
 - **One app:** `screen/` becomes `frontend/`, a React app (React, `@vitejs/plugin-react`; no router, no state library, no CSS framework). The URL picks the view.
 - **Screens only show.** `ScreenView` is a fullscreen canvas and nothing else; a small debug overlay (connection status + fps) appears only with `?fps`.
 - **The remote controls.** `RemoteView` (`?view=remote`, meant for a phone) shows status, activity, mood and stats, with one large button per action, generated from `ACTIONS` so a new action appears automatically.
-- **Rooms are configuration, not code.** Per-room differences (today: a glow multiplier; Selene fights room light, so it glows brighter than Helios) are presets in `rooms.ts`, never branches inside components.
+- **Rooms are configuration, not code.** Per-room differences (today: a glow multiplier, since Selene fights room light and glows brighter than Helios; an opaque canvas; and a render resolution, see the fps investigation below) are presets in `rooms.ts`, never branches inside components.
 - **One palette:** colors live as CSS variables in `styles.css`; `theme.ts` reads them for the canvas, so CSS and canvas can't disagree (the moon's shadow circle must be exactly the background).
 - **Lifecycle-safe:** the WebSocket and the animation loop live in React effects with cleanups (`close()`, `cancelAnimationFrame`, `ResizeObserver.disconnect`), so StrictMode's double mount in development doesn't leave a second socket or loop behind.
 - **Done when:** the screen works on the laptop at `?room=dev&fps`, the remote on a phone, a feed from the phone shows on the screen, both reconnect after a hub restart, and Selene at `?room=selene&fps` still runs at 57-60 fps.
-- **Status (Oct 2026): all working except the fps.** **Revisit:** Selene averages ~53 fps (M2: 57-59). Test one variable at a time: the glow (`dev` vs `selene` room), a production build vs dev, the old M2 page re-measured today, then the canvas size (fullscreen now, 70vh in M2; main suspect, since the orb and halo scale with height).
+- **Status: done (Oct 2026).** Screen, remote, feed from the phone, and reconnect after a hub restart all verified by hand. Selene first dropped to ~53 fps with the fullscreen canvas (M2: 57-59); fixed, now 60.
+- **The Selene fps investigation** (one variable at a time, idle, `?room=selene&fps`, in the projector's browser app):
+
+  | Change | fps |
+  |---|---|
+  | baseline: fullscreen canvas, full-size orb (dev) | 52-53 |
+  | production build instead of dev | 53-54 |
+  | orb radius x0.7 (M2 size), canvas still fullscreen | 54-55 |
+  | canvas 70vh (M2 geometry, so the orb is M2 size too) | 59-60 |
+  | opaque context (`alpha: false`) | 54-55 |
+  | opaque + backing store at 0.7 resolution | **60** |
+
+  - **The first hypothesis was wrong:** the bigger glow costs only ~2 fps. The canvas *area* cost ~5 (same orb, 70vh vs fullscreen). Selene is limited by **pixels painted and composited per frame**, not by any one thing drawn, so caching the glow (it paints the same pixels) was dropped.
+  - **Dev mode is not the cause** (~1 fps, within reading noise). An opaque context helps a little (the compositor copies instead of blending).
+  - **The fix:** two room presets, `opaque` (true for Helios and Selene; false for dev and the future M7 desktop overlay, which must be transparent) and `resolution` (Selene 0.7: backing store 1344x620 instead of 1920x886, stretched by the browser; no visible softness on the wall). Helios and dev stay at 1 until measured.
+  - **The browser app isn't fullscreen:** Selene reports `devicePixelRatio` 2 with a 960x443 CSS viewport (the app's UI takes ~97 CSS px). The Cast receiver will get the full 1920x1080, about 22% more pixels, so 0.7 was picked for headroom. **Re-measure under Cast in M4.**
 
 ### M3: Handoffs with a fake stick
 - `tools/fake-stick`: a script that connects as the stick and can "flick," "carry" (record events), and "return."
@@ -342,6 +357,7 @@ The M2 `screen/` page was a working proof of concept: one `main.ts` with all the
 - Add the hub's state volume to `athena-backup`.
 - Kiosk on the host: Chromium fullscreen on the HDMI output to the TV, loading the frontend at `?room=helios`. The kiosk only drives the TV.
 - Selene: the hub launches our Cast receiver on the projector by IP and re-casts when the room drops (D12). Needs the page on HTTPS under a name the projector can resolve (section 8).
+- **Measure the fps on the real setups** with `?fps`: Selene under the Cast receiver (full 1920x1080, ~22% more pixels than the browser app; tune `ROOMS.selene.resolution` if it drops below ~57) and Helios on the Pi's Chromium (`ROOMS.helios.resolution` is 1 until measured). Lesson from M2.5: on weak GPUs the cost is pixels per frame.
 - HDMI-CEC: the TV turns on when the pet wakes, and off at night.
 - **Done when:** unplug athena, plug it back in, and the pet is back on Helios and Selene without touching anything, with its state intact.
 
